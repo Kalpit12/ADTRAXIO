@@ -1,18 +1,25 @@
 "use client";
 
-import { AdtraxioAiMark } from "@/components/assistant/adtraxio-ai-mark";
+interface AssistantLoadingProps {
+  label?: string;
+}
 
-export function AssistantLoading() {
+export function AssistantLoading({ label = "Working on your request" }: AssistantLoadingProps) {
   return (
-    <div className="flex w-full justify-start">
-      <div className="flex min-w-0 max-w-[760px] items-start gap-3">
-        <AdtraxioAiMark className="mt-0.5" />
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">ADTRAXIO AI</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Analyzing your workspace
-            <span className="inline-flex w-4 animate-pulse">...</span>
-          </p>
+    <div
+      className="flex w-full justify-start border-l border-border/50 pl-4 sm:pl-5"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="min-w-0 space-y-2 py-1">
+        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          Copilot
+        </p>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <div className="flex gap-1 pt-1" aria-hidden>
+          <span className="size-1 animate-pulse rounded-full bg-muted-foreground/50 [animation-delay:0ms]" />
+          <span className="size-1 animate-pulse rounded-full bg-muted-foreground/50 [animation-delay:150ms]" />
+          <span className="size-1 animate-pulse rounded-full bg-muted-foreground/50 [animation-delay:300ms]" />
         </div>
       </div>
     </div>

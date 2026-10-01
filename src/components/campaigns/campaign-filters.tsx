@@ -50,11 +50,12 @@ export function CampaignFilters({
             type="button"
             onClick={() => onStatusChange(filter.value)}
             className={cn(
-              "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+              "min-h-9 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
               status === filter.value
-                ? "bg-secondary text-foreground"
+                ? "bg-white/[0.06] text-foreground ring-1 ring-adtraxio-accent/20"
                 : "text-muted-foreground hover:bg-white/[0.03] hover:text-foreground"
             )}
+            aria-pressed={status === filter.value}
           >
             {filter.label}
           </button>

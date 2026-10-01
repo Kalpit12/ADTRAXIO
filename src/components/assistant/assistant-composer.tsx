@@ -93,10 +93,14 @@ export function AssistantComposer({
   return (
     <div className="shrink-0 border-t border-border/60 bg-background/95 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
       <div className="mx-auto w-full max-w-[820px]">
+        <p className="mb-2 hidden text-[10px] text-muted-foreground sm:block">
+          Ask about performance, content, strategy, publishing, or experiments —
+          grounded in your workspace data.
+        </p>
         <div
           className={cn(
-            "rounded-2xl border border-border/70 bg-adtraxio-surface/40 p-3 transition-colors",
-            "focus-within:border-adtraxio-accent/40"
+            "rounded-md border border-border/70 bg-adtraxio-surface/25 p-2.5 transition-colors sm:p-3",
+            "focus-within:border-adtraxio-accent/35"
           )}
         >
           <AttachmentPreview
@@ -105,17 +109,20 @@ export function AssistantComposer({
             disabled={loading || disabled}
           />
           {attachmentError && (
-            <p className="mb-2 px-1 text-xs text-red-400">{attachmentError}</p>
+            <p className="mb-2 px-1 text-xs text-red-400" role="alert">
+              {attachmentError}
+            </p>
           )}
           <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask ADTRAXIO AI anything..."
+            placeholder="Message Growth Copilot…"
             rows={2}
             disabled={disabled || loading}
+            aria-label="Message Growth Copilot"
             className={cn(
-              "w-full min-h-[52px] max-h-32 resize-none bg-transparent px-1 py-1 text-sm leading-relaxed",
+              "w-full min-h-[48px] max-h-32 resize-none bg-transparent px-1 py-1 text-sm leading-relaxed",
               "placeholder:text-muted-foreground/50 focus:outline-none"
             )}
           />
@@ -134,7 +141,11 @@ export function AssistantComposer({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                disabled={disabled || loading || attachments.length >= ASSISTANT_MAX_ATTACHMENTS}
+                disabled={
+                  disabled ||
+                  loading ||
+                  attachments.length >= ASSISTANT_MAX_ATTACHMENTS
+                }
                 onClick={() => fileInputRef.current?.click()}
                 className="text-muted-foreground hover:text-foreground"
                 aria-label="Attach files"

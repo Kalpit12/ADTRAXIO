@@ -2,12 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnalyticsEmptyState } from "@/components/analytics/analytics-empty-state";
-import { AnalyticsHeader } from "@/components/analytics/analytics-header";
+import { AnalyticsErrorBanner } from "@/components/analytics/analytics-error-banner";
+import { AnalyticsInsightBridge } from "@/components/analytics/analytics-insight-bridge";
+import { AnalyticsPartialNotice } from "@/components/analytics/analytics-partial-notice";
+import { AnalyticsPageSkeleton } from "@/components/analytics/analytics-skeleton";
 import { ContentPerformanceTable } from "@/components/analytics/content-performance-table";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
 import { MetricSummary } from "@/components/analytics/metric-summary";
 import { AnalyticsPerformanceChart } from "@/components/analytics/performance-chart";
+import {
+  PlatformFilterControl,
+  type PlatformFilter,
+} from "@/components/analytics/platform-filter";
 import { PlatformPerformance } from "@/components/analytics/platform-performance";
+import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
+import { presetLabel } from "@/lib/analytics/display";
 import type { PresetRange } from "@/lib/analytics/date-range";
 import type {
   AnalyticsOverview,
@@ -15,9 +25,7 @@ import type {
 } from "@/lib/analytics/types";
 import type { SafeSocialAccount } from "@/lib/social/types";
 import { IntelligencePanel } from "@/components/intelligence/intelligence-panel";
-import { cn } from "@/lib/utils";
 
-type PlatformFilter = "all" | "instagram" | "facebook";
 type ChartMetric = "impressions" | "reach" | "engagement";
 
 function buildQuery(input: {
@@ -39,6 +47,18 @@ function buildQuery(input: {
   }
 
   return params.toString();
+}
+
+function unavailableSummaryMetrics(
+  summary: AnalyticsOverview["summary"] | undefined
+): string[] {
+  if (!summary) return [];
+  const missing: string[] = [];
+  if (summary.impressions == null) missing.push("Impressions");
+  if (summary.reach == null) missing.push("Reach");
+  if (summary.engagement == null) missing.push("Engagement");
+  if (summary.followers == null) missing.push("Followers");
+  return missing;
 }
 
 export function AnalyticsView() {
@@ -67,7 +87,12 @@ export function AnalyticsView() {
   );
 
   const availablePlatforms = useMemo(() => {
-    const set = new Set(connectedAccounts.map((account) => account.platform));
+    const set = new Set<"instagram" | "facebook">();
+    connectedAccounts.forEach((account) => {
+      if (account.platform === "instagram" || account.platform === "facebook") {
+        set.add(account.platform);
+      }
+    });
     return set;
   }, [connectedAccounts]);
 
@@ -137,10 +162,9 @@ export function AnalyticsView() {
 
       const failures = (payload.accounts ?? []).filter((item) => !item.success);
       if (failures.length > 0) {
-        const labels = failures
-          .map((item) => `${item.platform}: ${item.error ?? "failed"}`)
-          .join(" · ");
-        setSyncMessage(`Partial refresh. ${labels}`);
+        setSyncMessage(
+          "Partial refresh — some accounts could not sync. Try again shortly."
+        );
       } else {
         setSyncMessage("Analytics refreshed.");
       }
@@ -160,64 +184,102 @@ export function AnalyticsView() {
         ? "no_data"
         : null;
 
+  const partialMetrics = useMemo(
+    () => unavailableSummaryMetrics(overview?.summary),
+    [overview?.summary]
+  );
+
+  const showPartialNotice =
+    emptyVariant == null &&
+    overview?.summary.hasData &&
+    partialMetrics.length > 0 &&
+    partialMetrics.length < 4;
+
+  const contextLine = useMemo(() => {
+    if (preset === "custom" && customFrom && customTo) {
+      return `${customFrom} → ${customTo}`;
+    }
+    return presetLabel(preset);
+  }, [preset, customFrom, customTo]);
+
   return (
-    <div className="space-y-8">
-      <AnalyticsHeader
-        syncing={syncing}
-        lastSyncedAt={lastSyncedAt}
-        onRefresh={() => void handleRefresh()}
-      />
+    <div className="space-y-8 lg:space-y-10">
+      <PageHeader
+        title="Analytics"
+        description="Understand what is driving your social growth."
+      >
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={syncing}
+          onClick={() => void handleRefresh()}
+        >
+          {syncing ? "Refreshing…" : "Refresh data"}
+        </Button>
+      </PageHeader>
 
-      <DateRangeSelector
-        preset={preset}
-        customFrom={customFrom}
-        customTo={customTo}
-        onPresetChange={setPreset}
-        onCustomFromChange={setCustomFrom}
-        onCustomToChange={setCustomTo}
-      />
-
-      <div className="flex flex-wrap gap-2">
-        {(["all", "instagram", "facebook"] as const).map((item) => {
-          if (item !== "all" && !availablePlatforms.has(item)) return null;
-
-          return (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setPlatform(item)}
-              className={cn(
-                "rounded-md border px-3 py-1.5 text-xs font-medium capitalize transition-colors",
-                platform === item
-                  ? "border-adtraxio-accent/40 bg-adtraxio-accent/5 text-foreground"
-                  : "border-border/60 text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {item}
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-4 border-b border-border/50 pb-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <DateRangeSelector
+            preset={preset}
+            customFrom={customFrom}
+            customTo={customTo}
+            onPresetChange={setPreset}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+          />
+          <PlatformFilterControl
+            value={platform}
+            available={availablePlatforms}
+            onChange={setPlatform}
+          />
+        </div>
+        <div className="text-xs text-muted-foreground">
+          <p>
+            <span className="text-foreground/80">Period:</span> {contextLine}
+          </p>
+          {connectedAccounts.length > 0 && (
+            <p className="mt-0.5">
+              <span className="text-foreground/80">Channels:</span>{" "}
+              {connectedAccounts.length} connected
+            </p>
+          )}
+          {lastSyncedAt && (
+            <p className="mt-0.5">
+              Last refresh {new Date(lastSyncedAt).toLocaleString()}
+            </p>
+          )}
+        </div>
       </div>
 
       {error && (
-        <p className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
+        <AnalyticsErrorBanner
+          message={error}
+          onRetry={() => void loadAnalytics()}
+        />
       )}
 
       {syncMessage && (
-        <p className="text-sm text-muted-foreground">{syncMessage}</p>
+        <p className="text-sm text-muted-foreground" role="status">
+          {syncMessage}
+        </p>
       )}
 
       {loading ? (
-        <div className="space-y-3">
-          <div className="h-24 animate-pulse rounded-md bg-secondary/30" />
-          <div className="h-64 animate-pulse rounded-md bg-secondary/30" />
-        </div>
+        <AnalyticsPageSkeleton />
       ) : emptyVariant ? (
-        <AnalyticsEmptyState variant={emptyVariant} />
+        <AnalyticsEmptyState
+          variant={emptyVariant}
+          onRefresh={() => void handleRefresh()}
+          refreshing={syncing}
+        />
       ) : (
-        <>
+        <div className="space-y-8 lg:space-y-10">
+          {showPartialNotice && (
+            <AnalyticsPartialNotice unavailableMetrics={partialMetrics} />
+          )}
+
           <MetricSummary
             impressions={overview?.summary.impressions ?? null}
             reach={overview?.summary.reach ?? null}
@@ -231,19 +293,22 @@ export function AnalyticsView() {
             onMetricChange={setChartMetric}
           />
 
-          <PlatformPerformance platforms={overview?.platforms ?? []} />
+          <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
+            <PlatformPerformance platforms={overview?.platforms ?? []} />
+            <div className="rounded-lg border border-border/60 bg-adtraxio-surface/10 px-5 py-5 sm:px-6">
+              <IntelligencePanel
+                title="From your data"
+                compact
+                maxItems={2}
+                viewAllHref="/intelligence"
+              />
+            </div>
+          </div>
 
           <ContentPerformanceTable rows={content} />
 
-          <div className="border-t border-border/60 pt-8">
-            <IntelligencePanel
-              title="Insights"
-              compact
-              maxItems={2}
-              viewAllHref="/intelligence"
-            />
-          </div>
-        </>
+          <AnalyticsInsightBridge />
+        </div>
       )}
     </div>
   );

@@ -28,7 +28,7 @@ export function AiContentStudio() {
   const image = homepageImages.contentCreatorStudio;
 
   return (
-    <section id="ai-studio" className="py-24 sm:py-32">
+    <section id="create" className="py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-6 lg:px-8">
         <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
@@ -40,8 +40,11 @@ export function AiContentStudio() {
                 overlay="bottom"
                 className="mb-8 aspect-[16/10] w-full lg:hidden"
               />
-              <h2 className="font-heading text-3xl tracking-tight text-foreground sm:text-4xl">
-                From idea to publish-ready in minutes.
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-adtraxio-accent">
+                Create
+              </p>
+              <h2 className="font-heading mt-4 text-3xl tracking-tight text-foreground sm:text-4xl">
+                Turn a brief into platform-ready content.
               </h2>
             </Reveal>
             <Reveal delay={0.1}>

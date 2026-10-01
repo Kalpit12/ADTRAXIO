@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Brain, FlaskConical, Menu, MessageSquarePlus, ShieldCheck, Sparkles } from "lucide-react";
-import { AdtraxioAiMark } from "@/components/assistant/adtraxio-ai-mark";
+import {
+  Brain,
+  ClipboardList,
+  FlaskConical,
+  Menu,
+  MessageSquarePlus,
+  ShieldCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -38,47 +44,71 @@ export function AssistantHeader({
             <Menu className="size-4" />
           </Button>
         )}
-        <AdtraxioAiMark />
         <div className="min-w-0">
-          <h1 className="text-sm font-semibold tracking-tight text-foreground">
-            ADTRAXIO AI
+          <h1 className="font-heading text-sm font-semibold tracking-tight text-foreground sm:text-base">
+            Growth Copilot
           </h1>
-          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Your growth copilot
+          <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            AI growth console
           </p>
         </div>
       </div>
 
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-2">
         {workspaceLabel && (
-          <div className="hidden min-w-0 max-w-[200px] truncate text-right sm:block">
-            <p className="truncate text-xs text-muted-foreground">
-              {workspaceLabel}
-            </p>
-          </div>
+          <p
+            className="hidden max-w-[160px] truncate text-xs text-muted-foreground md:block"
+            title={workspaceLabel}
+          >
+            {workspaceLabel}
+          </p>
         )}
-        <Button asChild type="button" variant="ghost" size="sm" className="hidden sm:inline-flex">
+        <Button
+          asChild
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="hidden sm:inline-flex"
+        >
           <Link href="/assistant/briefs">
-            <Sparkles className="size-3.5" />
+            <ClipboardList className="size-3.5" />
             Briefs
           </Link>
         </Button>
-        <Button asChild type="button" variant="ghost" size="sm" className="hidden sm:inline-flex">
+        <Button
+          asChild
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="hidden sm:inline-flex"
+        >
           <Link href="/assistant/experiments">
             <FlaskConical className="size-3.5" />
             Experiments
           </Link>
         </Button>
-        <Button asChild type="button" variant="ghost" size="sm" className="hidden sm:inline-flex">
+        <Button
+          asChild
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="hidden lg:inline-flex"
+        >
           <Link href="/assistant/optimization">
             <ShieldCheck className="size-3.5" />
             Optimization
           </Link>
         </Button>
-        <Button asChild type="button" variant="ghost" size="sm" className="hidden md:inline-flex">
+        <Button
+          asChild
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="hidden md:inline-flex"
+        >
           <Link href="/assistant/brand">
             <Brain className="size-3.5" />
-            Brand Brain
+            Brand
           </Link>
         </Button>
         <Button

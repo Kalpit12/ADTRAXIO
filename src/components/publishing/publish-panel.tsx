@@ -7,12 +7,19 @@ import { Button } from "@/components/ui/button";
 import { getDefaultTimezone } from "@/lib/publishing/timezone";
 import type { PublishingMediaType } from "@/lib/publishing/types";
 import type { SafeSocialAccount } from "@/lib/social/types";
+import { friendlyPublishError } from "@/components/publishing/publish-status-badge";
 import { cn } from "@/lib/utils";
 
 interface PublishPanelProps {
   open: boolean;
   contentId?: string | null;
   caption: string;
+  initialMediaUrl?: string | null;
+  initialMediaAssetId?: string | null;
+  initialMediaType?: PublishingMediaType | null;
+  lockMedia?: boolean;
+  publishBlocked?: boolean;
+  publishBlockedReason?: string | null;
   onClose: () => void;
   onSuccess?: (message: string) => void;
 }
@@ -23,6 +30,12 @@ export function PublishPanel({
   open,
   contentId,
   caption,
+  initialMediaUrl,
+  initialMediaAssetId,
+  initialMediaType,
+  lockMedia = false,
+  publishBlocked = false,
+  publishBlockedReason,
   onClose,
   onSuccess,
 }: PublishPanelProps) {
@@ -58,6 +71,13 @@ export function PublishPanel({
 
     setLoadingAccounts(true);
     setError(null);
+    if (initialMediaUrl) {
+      setMediaUrl(initialMediaUrl);
+      setMediaType(initialMediaType ?? null);
+    } else if (initialMediaAssetId) {
+      setMediaUrl(null);
+      setMediaType(initialMediaType ?? "image");
+    }
 
     fetch("/api/social/accounts")
       .then((res) => res.json())
@@ -73,7 +93,7 @@ export function PublishPanel({
       })
       .catch(() => setError("Unable to load connected accounts."))
       .finally(() => setLoadingAccounts(false));
-  }, [open]);
+  }, [open, initialMediaUrl, initialMediaAssetId, initialMediaType]);
 
   if (!open) return null;
 
@@ -113,12 +133,21 @@ export function PublishPanel({
   }
 
   async function handleSubmit() {
+    if (publishBlocked) {
+      setError(publishBlockedReason ?? "Publishing is blocked until approval.");
+      return;
+    }
+
     if (!selectedAccountId) {
       setError("Select a connected account.");
       return;
     }
 
-    if (selectedAccount?.platform === "instagram" && !mediaUrl) {
+    if (
+      selectedAccount?.platform === "instagram" &&
+      !mediaUrl &&
+      !initialMediaAssetId
+    ) {
       setError("Instagram publishing requires media.");
       return;
     }
@@ -131,7 +160,8 @@ export function PublishPanel({
       socialAccountId: selectedAccountId,
       caption,
       mediaType,
-      mediaUrl,
+      mediaUrl: initialMediaAssetId ? null : mediaUrl,
+      mediaAssetId: initialMediaAssetId ?? null,
       timezone,
       ...(timing === "schedule"
         ? { scheduleDate, scheduleTime }
@@ -151,7 +181,7 @@ export function PublishPanel({
       const result = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        setError(result.error ?? "Unable to publish.");
+        setError(friendlyPublishError(result.error ?? "Unable to publish."));
         return;
       }
 
@@ -247,9 +277,16 @@ export function PublishPanel({
             </p>
           </section>
 
+          {publishBlocked && (
+            <p className="text-sm text-amber-200/90" role="status">
+              {publishBlockedReason ?? "Approval is required before publishing."}
+            </p>
+          )}
+
           <section>
             <p className="text-xs font-medium text-muted-foreground">Media</p>
             <div className="mt-3 space-y-3">
+              {!lockMedia && (
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
@@ -260,13 +297,20 @@ export function PublishPanel({
                 }}
                 className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border/70 file:bg-secondary/40 file:px-3 file:py-1.5 file:text-sm file:text-foreground"
               />
+              )}
               {uploading && (
                 <p className="text-xs text-muted-foreground">Uploading media…</p>
               )}
               {mediaUrl && (
                 <p className="truncate text-xs text-adtraxio-accent">Media attached</p>
               )}
-              {selectedAccount?.platform === "instagram" && !mediaUrl && (
+              {initialMediaAssetId && (
+                <p className="text-xs text-muted-foreground">
+                  Creative image will be prepared for publishing when you schedule
+                  or publish (not copied to public storage until then).
+                </p>
+              )}
+              {selectedAccount?.platform === "instagram" && !mediaUrl && !initialMediaAssetId && (
                 <p className="text-xs text-muted-foreground">
                   Instagram requires an image for publishing.
                 </p>
@@ -274,8 +318,10 @@ export function PublishPanel({
             </div>
           </section>
 
-          <section>
-            <p className="text-xs font-medium text-muted-foreground">Timing</p>
+          <section aria-labelledby="publish-timing">
+            <p id="publish-timing" className="text-xs font-medium text-muted-foreground">
+              Timing
+            </p>
             <div className="mt-3 flex gap-4 text-sm">
               <label className="flex items-center gap-2">
                 <input
@@ -331,6 +377,33 @@ export function PublishPanel({
           </section>
         </div>
 
+        {(selectedAccount || caption.trim()) && (
+          <div className="border-t border-border/50 bg-adtraxio-surface/10 px-5 py-4 text-xs text-muted-foreground">
+            <p className="font-medium text-foreground/90">Review</p>
+            <ul className="mt-2 space-y-1">
+              <li>
+                Account:{" "}
+                <span className="text-foreground">
+                  {selectedAccount?.accountName ??
+                    selectedAccount?.username ??
+                    "—"}
+                </span>
+                {selectedAccount && (
+                  <span className="capitalize"> · {selectedAccount.platform}</span>
+                )}
+              </li>
+              <li>
+                {timing === "schedule" ? "Schedule" : "Publish"}:{" "}
+                <span className="text-foreground">
+                  {timing === "schedule" && scheduleDate && scheduleTime
+                    ? `${scheduleDate} ${scheduleTime} (${timezone})`
+                    : "Immediately"}
+                </span>
+              </li>
+            </ul>
+          </div>
+        )}
+
         <div className="border-t border-border/60 px-5 py-4">
           <Button
             type="button"
@@ -339,7 +412,8 @@ export function PublishPanel({
               submitting ||
               uploading ||
               loadingAccounts ||
-              publishableAccounts.length === 0
+              publishableAccounts.length === 0 ||
+              publishBlocked
             }
             onClick={() => void handleSubmit()}
           >

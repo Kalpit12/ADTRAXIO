@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ApprovalStatusBadge } from "@/components/collaboration/approval-status-badge";
-import { ActivityPanel } from "@/components/collaboration/activity-panel";
-import { CommentsPanel } from "@/components/collaboration/comments-panel";
-import { Button } from "@/components/ui/button";
+import { ApprovalWorkflowSection } from "@/components/collaboration/approval-workflow-section";
 import type { CampaignApprovalRecord } from "@/lib/collaboration/types";
 
 interface CampaignApprovalPanelProps {
@@ -16,7 +13,6 @@ export function CampaignApprovalPanel({ campaignId }: CampaignApprovalPanelProps
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
 
   const loadApproval = useCallback(async () => {
     setLoading(true);
@@ -72,7 +68,8 @@ export function CampaignApprovalPanel({ campaignId }: CampaignApprovalPanelProps
     }
   }
 
-  const canReview = approval?.status === "pending" || approval?.status === "changes_requested";
+  const canReview =
+    approval?.status === "pending" || approval?.status === "changes_requested";
   const canRequest =
     !approval ||
     approval.status === "cancelled" ||
@@ -80,77 +77,23 @@ export function CampaignApprovalPanel({ campaignId }: CampaignApprovalPanelProps
     approval.status === "changes_requested";
 
   return (
-    <section className="space-y-4 rounded-lg border border-border/70 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-medium text-foreground">Campaign approval</h3>
-        {approval && <ApprovalStatusBadge status={approval.status} />}
-      </div>
-
-      {loading && <p className="text-xs text-muted-foreground">Loading…</p>}
-
-      {approval?.rejectionReason && (
-        <p className="text-xs text-muted-foreground">
-          Note: <span className="text-foreground">{approval.rejectionReason}</span>
-        </p>
-      )}
-
-      {error && <p className="text-xs text-destructive">{error}</p>}
-
-      <div className="flex flex-wrap gap-2">
-        {canRequest && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={actionLoading}
-            onClick={() => void runAction("request")}
-          >
-            Request review
-          </Button>
-        )}
-        {canReview && (
-          <>
-            <Button size="sm" disabled={actionLoading} onClick={() => void runAction("approve")}>
-              Approve
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={actionLoading}
-              onClick={() => void runAction("reject", { reason })}
-            >
-              Reject
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={actionLoading}
-              onClick={() => void runAction("changes", { reason })}
-            >
-              Request changes
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={actionLoading}
-              onClick={() => void runAction("cancel")}
-            >
-              Cancel
-            </Button>
-          </>
-        )}
-      </div>
-
-      {canReview && (
-        <input
-          className="flex h-9 w-full max-w-md rounded-md border border-border/70 bg-transparent px-3 text-sm outline-none focus:border-adtraxio-accent/50"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Optional note"
-        />
-      )}
-
-      <CommentsPanel campaignId={campaignId} approvalId={approval?.id} />
-      {approval && <ActivityPanel entityType="campaign_approval" entityId={approval.id} />}
-    </section>
+    <ApprovalWorkflowSection
+      title="Campaign review"
+      description="Align stakeholders before this campaign moves forward."
+      approval={approval}
+      loading={loading}
+      actionLoading={actionLoading}
+      error={error}
+      canReview={canReview}
+      canRequest={canRequest}
+      onRequest={() => void runAction("request")}
+      onApprove={() => void runAction("approve")}
+      onReject={(reason) => void runAction("reject", { reason })}
+      onRequestChanges={(reason) => void runAction("changes", { reason })}
+      onCancel={() => void runAction("cancel")}
+      activityEntityType="campaign_approval"
+      activityEntityId={approval?.id}
+      campaignId={campaignId}
+    />
   );
 }

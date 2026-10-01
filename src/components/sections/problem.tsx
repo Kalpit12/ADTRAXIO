@@ -55,7 +55,7 @@ export function Problem() {
           <Reveal delay={0.2}>
             <div className="flex items-center gap-4">
               <ArrowRight className="hidden size-5 shrink-0 text-adtraxio-accent lg:block" />
-              <div className="rounded-lg border border-adtraxio-accent/30 bg-adtraxio-accent-muted p-8 glow-accent-sm">
+              <div className="rounded-lg border border-adtraxio-accent/25 bg-adtraxio-accent-muted/80 p-8">
                 <p className="text-xs font-medium uppercase tracking-wider text-adtraxio-accent">
                   The ADTRAXIO way
                 </p>

@@ -8,7 +8,7 @@ export function CampaignsSection() {
   const image = homepageImages.socialPhoneFeed;
 
   return (
-    <section id="campaigns" className="border-y border-border py-24 sm:py-32">
+    <section id="act" className="border-y border-border/80 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-6 lg:px-8">
         <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
           <div>

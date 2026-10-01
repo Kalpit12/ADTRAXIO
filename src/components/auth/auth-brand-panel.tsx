@@ -21,7 +21,7 @@ export function AuthBrandPanel({ compact = false }: AuthBrandPanelProps) {
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="flex flex-col justify-center"
     >
-      <AdtraxioLogo href="/" size="md" />
+      <AdtraxioLogo href="/" size="xl" className="max-w-[min(100%,22rem)]" priority />
 
       {!compact && (
         <>

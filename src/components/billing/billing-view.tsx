@@ -1,9 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { BillingActionPanel } from "@/components/billing/billing-action-panel";
+import { BillingError } from "@/components/billing/billing-error";
+import { BillingPlanComparison } from "@/components/billing/billing-plan-comparison";
+import { BillingSection } from "@/components/billing/billing-section";
+import { BillingSkeleton } from "@/components/billing/billing-skeleton";
 import { CurrentPlan } from "@/components/billing/current-plan";
 import { PlanCard } from "@/components/billing/plan-card";
 import { UsageSummary } from "@/components/billing/usage-summary";
+import { PageHeader } from "@/components/layout/page-header";
+import { friendlyBillingError } from "@/lib/billing/display";
 import type { PublicPlan, SubscriptionInfo, UsageMetric } from "@/lib/billing/types";
 
 export function BillingView() {
@@ -41,7 +48,7 @@ export function BillingView() {
       };
 
       if (!subRes.ok) {
-        setError(subPayload.error ?? "Unable to load billing.");
+        setError(friendlyBillingError(subPayload.error ?? "Unable to load billing."));
         return;
       }
 
@@ -78,7 +85,7 @@ export function BillingView() {
       const payload = (await response.json()) as { url?: string; error?: string };
 
       if (!response.ok || !payload.url) {
-        setError(payload.error ?? "Unable to start checkout.");
+        setError(friendlyBillingError(payload.error ?? "Unable to start checkout."));
         return;
       }
 
@@ -99,7 +106,9 @@ export function BillingView() {
       const payload = (await response.json()) as { url?: string; error?: string };
 
       if (!response.ok || !payload.url) {
-        setError(payload.error ?? "Unable to open billing portal.");
+        setError(
+          friendlyBillingError(payload.error ?? "Unable to open billing portal.")
+        );
         return;
       }
 
@@ -112,54 +121,55 @@ export function BillingView() {
   }
 
   if (loading) {
-    return (
-      <div className="space-y-4">
-        <div className="h-28 animate-pulse rounded-lg bg-secondary/30" />
-        <div className="h-48 animate-pulse rounded-lg bg-secondary/30" />
-      </div>
-    );
+    return <BillingSkeleton />;
   }
 
   const currentPlanId = subscription?.effectivePlan ?? "free";
+  const currentPlanDetails =
+    plans.find((p) => p.id === currentPlanId) ?? plans.find((p) => p.id === "free");
+  const checkoutBusy = checkoutPlan !== null;
+  const showBillingManagement =
+    billingAvailable && Boolean(subscription?.hasStripeSubscription);
 
   return (
     <div className="space-y-10">
-      <header className="border-b border-border/60 pb-6">
-        <p className="text-xs font-medium text-muted-foreground">Billing</p>
-        <h1 className="font-heading mt-1 text-3xl tracking-tight text-foreground sm:text-4xl">
-          Manage your ADTRAXIO subscription
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Simple pricing in Kenyan Shillings. Upgrade when you need more capacity.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Billing"
+        title="Plans & billing"
+        description="Manage your ADTRAXIO plan and subscription."
+      />
 
-      {error && (
-        <p className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      <div aria-live="polite" className="space-y-4">
+        {error && <BillingError message={error} onRetry={loadBilling} />}
+      </div>
 
       {!billingAvailable && (
-        <p className="text-sm text-muted-foreground">
-          Paid checkout is not configured yet. Set Stripe environment variables to
-          enable subscriptions.
+        <p className="text-sm text-muted-foreground" role="status">
+          Paid subscriptions are not available in this environment yet. You can
+          still use the Free plan and review what each tier includes below.
         </p>
       )}
 
       {subscription && (
-        <CurrentPlan
-          subscription={subscription}
-          billingAvailable={billingAvailable}
-          portalLoading={portalLoading}
-          onManageBilling={handlePortal}
-        />
+        <BillingSection title="Current plan">
+          <CurrentPlan
+            subscription={subscription}
+            planDetails={currentPlanDetails}
+            billingAvailable={billingAvailable}
+            portalLoading={portalLoading}
+            checkoutBusy={checkoutBusy}
+            onManageBilling={handlePortal}
+          />
+        </BillingSection>
       )}
 
       <UsageSummary metrics={usage} />
 
-      <section className="space-y-4 border-t border-border/60 pt-10">
-        <h2 className="text-sm font-medium text-foreground">Plans</h2>
+      <BillingSection
+        title="Plans"
+        description="Compare tiers. Upgrades open secure checkout; your plan updates after payment is confirmed."
+      >
+        <BillingPlanComparison plans={plans} currentPlanId={currentPlanId} />
         <div className="grid gap-4 lg:grid-cols-3">
           {plans.map((plan) => (
             <PlanCard
@@ -171,7 +181,20 @@ export function BillingView() {
             />
           ))}
         </div>
-      </section>
+      </BillingSection>
+
+      {showBillingManagement && (
+        <BillingSection
+          title="Billing management"
+          description="Invoices, payment method, and subscription changes."
+        >
+          <BillingActionPanel
+            portalLoading={portalLoading}
+            checkoutBusy={checkoutBusy}
+            onManageBilling={handlePortal}
+          />
+        </BillingSection>
+      )}
     </div>
   );
 }

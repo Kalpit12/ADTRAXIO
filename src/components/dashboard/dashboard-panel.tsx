@@ -22,7 +22,7 @@ export function DashboardSurface({ children, className }: DashboardSurfaceProps)
   return (
     <div
       className={cn(
-        "rounded-lg border border-border/70 bg-adtraxio-surface-elevated/50",
+        "rounded-md border border-border/80 bg-adtraxio-surface/35",
         className
       )}
     >

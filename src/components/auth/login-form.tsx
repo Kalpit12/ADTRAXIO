@@ -10,6 +10,7 @@ import { SocialAuthButton } from "@/components/auth/social-auth-button";
 import { signInWithEmail, signInWithGoogle } from "@/lib/auth/auth-service";
 import { getPostAuthDestination } from "@/lib/onboarding/service";
 import { validateLogin, type FieldErrors } from "@/lib/auth/validation";
+import { invalidateDashboardDataCache } from "@/lib/dashboard/service";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +54,8 @@ export function LoginForm() {
     }
 
     setSuccess(true);
+    invalidateDashboardDataCache();
+    void fetch("/api/dashboard/overview", { credentials: "include" });
     const destination = await getPostAuthDestination();
     router.push(destination);
   }

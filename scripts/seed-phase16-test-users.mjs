@@ -173,6 +173,17 @@ async function seed() {
     role: "viewer",
   });
 
+  // Free plan includes 5 AI generations/month — reset smoke counter for dedicated test org only.
+  const monthStart = new Date(
+    Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)
+  ).toISOString();
+  await admin
+    .from("billing_usage_events")
+    .delete()
+    .eq("organization_id", orgId)
+    .eq("metric", "ai_generation")
+    .gte("created_at", monthStart);
+
   console.log("\n✓ Phase 16 test accounts ready\n");
   console.log("  Agency org id:", orgId);
   console.log("  Client A id:  ", clientAId);

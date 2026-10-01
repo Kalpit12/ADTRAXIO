@@ -1,50 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { PlatformIcon } from "@/components/dashboard/platform-icon";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ScheduledPostRow } from "@/components/publishing/scheduled-post-row";
+import { PublishingEmptyState } from "@/components/publishing/publishing-empty-state";
+import { PublishCancelDialog } from "@/components/publishing/publish-cancel-dialog";
+import { PublishingSkeleton } from "@/components/publishing/publishing-skeleton";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import type { ScheduledPostRecord } from "@/lib/publishing/types";
+import { friendlyPublishError } from "@/components/publishing/publish-status-badge";
+import type { PublishingStatus, ScheduledPostRecord } from "@/lib/publishing/types";
 import { cn } from "@/lib/utils";
 
-const STATUS_LABELS: Record<string, string> = {
-  scheduled: "Scheduled",
-  publishing: "Publishing",
-  published: "Published",
-  failed: "Failed",
-  cancelled: "Cancelled",
-  draft: "Draft",
-};
+const SECTION_ORDER: Array<{
+  key: PublishingStatus | "upcoming";
+  title: string;
+  description: string;
+  statuses: PublishingStatus[];
+}> = [
+  {
+    key: "upcoming",
+    title: "Upcoming",
+    description: "Scheduled and in progress",
+    statuses: ["scheduled", "publishing", "draft"],
+  },
+  {
+    key: "published",
+    title: "Published",
+    description: "Successfully delivered",
+    statuses: ["published"],
+  },
+  {
+    key: "failed",
+    title: "Needs attention",
+    description: "Failed to publish",
+    statuses: ["failed"],
+  },
+  {
+    key: "cancelled",
+    title: "Cancelled",
+    description: "Removed from schedule",
+    statuses: ["cancelled"],
+  },
+];
 
-function formatWhen(post: ScheduledPostRecord): string {
-  if (post.status === "published" && post.publishedAt) {
-    return new Date(post.publishedAt).toLocaleString();
-  }
-  if (post.scheduledFor) {
-    return new Date(post.scheduledFor).toLocaleString();
-  }
-  return new Date(post.createdAt).toLocaleString();
-}
-
-function statusClass(status: string): string {
-  switch (status) {
-    case "published":
-      return "text-adtraxio-accent";
-    case "failed":
-      return "text-red-300";
-    case "scheduled":
-      return "text-amber-300";
-    case "publishing":
-      return "text-muted-foreground";
-    default:
-      return "text-muted-foreground";
-  }
-}
+type StatusFilter = "all" | PublishingStatus;
 
 export function PublishingQueueView() {
   const [posts, setPosts] = useState<ScheduledPostRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<StatusFilter>("all");
+  const [cancelTarget, setCancelTarget] = useState<ScheduledPostRecord | null>(
+    null
+  );
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -58,7 +68,11 @@ export function PublishingQueueView() {
       };
 
       if (!response.ok) {
-        setError(payload.error ?? "Unable to load publishing queue.");
+        setError(
+          friendlyPublishError(
+            payload.error ?? "Unable to load publishing queue."
+          )
+        );
         return;
       }
 
@@ -85,7 +99,7 @@ export function PublishingQueueView() {
 
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setError(payload.error ?? "Action failed.");
+        setError(friendlyPublishError(payload.error ?? "Action failed."));
         return;
       }
 
@@ -97,118 +111,185 @@ export function PublishingQueueView() {
     }
   }
 
-  const grouped = {
-    scheduled: posts.filter((post) => post.status === "scheduled"),
-    publishing: posts.filter((post) => post.status === "publishing"),
-    published: posts.filter((post) => post.status === "published"),
-    failed: posts.filter((post) => post.status === "failed"),
-  };
+  function requestCancel(post: ScheduledPostRecord) {
+    setCancelTarget(post);
+  }
+
+  async function confirmCancelPost() {
+    if (!cancelTarget) return;
+    const id = cancelTarget.id;
+    await runAction(id, "cancel");
+    setCancelTarget(null);
+  }
+
+  const filteredPosts = useMemo(() => {
+    if (filter === "all") return posts;
+    return posts.filter((p) => p.status === filter);
+  }, [posts, filter]);
+
+  const statusCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const post of posts) {
+      map.set(post.status, (map.get(post.status) ?? 0) + 1);
+    }
+    return map;
+  }, [posts]);
 
   return (
-    <div className="space-y-10">
-      <header className="border-b border-border/60 pb-6">
-        <p className="text-xs font-medium text-muted-foreground">Publishing</p>
-        <h1 className="font-heading mt-1 text-3xl tracking-tight text-foreground sm:text-4xl">
-          Queue
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Scheduled, in-progress, published, and failed posts for your workspace.
-        </p>
-      </header>
+    <div className="space-y-8">
+      <PageHeader
+        title="Publishing"
+        description="Schedule and manage what goes out, where, and when — separate from campaign strategy."
+      >
+        <Button asChild size="sm" variant="outline">
+          <Link href="/create">Content Studio</Link>
+        </Button>
+      </PageHeader>
 
-      {error && (
-        <p className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      <p className="text-xs text-muted-foreground">
+        Campaign objectives live in{" "}
+        <Link href="/campaigns" className="font-medium text-foreground hover:underline">
+          Campaigns
+        </Link>
+        .
+      </p>
 
-      {loading ? (
-        <div className="space-y-3">
-          <div className="h-16 animate-pulse rounded-md bg-secondary/30" />
-          <div className="h-16 animate-pulse rounded-md bg-secondary/30" />
-        </div>
-      ) : posts.length === 0 ? (
-        <div className="rounded-lg border border-border/60 px-4 py-8 text-sm text-muted-foreground">
-          No publishing activity yet. Save content in the studio and publish from there.
-        </div>
-      ) : (
-        <div className="space-y-10">
-          {(["scheduled", "publishing", "published", "failed"] as const).map(
-            (section) => {
-              const items = grouped[section];
-              if (items.length === 0) return null;
-
+      {!loading && posts.length > 0 && (
+        <div
+          className="flex flex-wrap gap-1 rounded-md border border-border/70 bg-adtraxio-surface/15 p-1"
+          role="group"
+          aria-label="Filter by status"
+        >
+          <button
+            type="button"
+            onClick={() => setFilter("all")}
+            className={cn(
+              "min-h-9 rounded px-3 py-1.5 text-xs font-medium",
+              filter === "all"
+                ? "bg-white/[0.06] ring-1 ring-adtraxio-accent/20"
+                : "text-muted-foreground"
+            )}
+            aria-pressed={filter === "all"}
+          >
+            All ({posts.length})
+          </button>
+          {(["scheduled", "published", "failed", "cancelled"] as const).map(
+            (status) => {
+              const count = statusCounts.get(status) ?? 0;
+              if (count === 0) return null;
               return (
-                <section key={section}>
-                  <h2 className="text-sm font-medium text-foreground">
-                    {STATUS_LABELS[section]}
-                  </h2>
-                  <ul className="mt-4 divide-y divide-border/60 rounded-lg border border-border/60">
-                    {items.map((post) => (
-                      <li
-                        key={post.id}
-                        className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex min-w-0 items-start gap-3">
-                          <PlatformIcon platform={post.platform} size="sm" />
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-foreground">
-                              {post.accountName ?? post.accountUsername ?? post.platform}
-                            </p>
-                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                              {post.caption ?? "No caption"}
-                            </p>
-                            <p className="mt-2 text-xs text-muted-foreground/80">
-                              {formatWhen(post)}
-                              {post.timezone ? ` · ${post.timezone}` : ""}
-                            </p>
-                            {post.platformPostId && (
-                              <p className="mt-1 truncate text-xs text-muted-foreground/70">
-                                Post ID: {post.platformPostId}
-                              </p>
-                            )}
-                            {post.errorMessage && (
-                              <p className="mt-1 text-xs text-red-300">{post.errorMessage}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className={cn("text-xs font-medium", statusClass(post.status))}>
-                            {STATUS_LABELS[post.status] ?? post.status}
-                          </span>
-                          {post.status === "scheduled" && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={actionId === post.id}
-                              onClick={() => void runAction(post.id, "cancel")}
-                            >
-                              Cancel
-                            </Button>
-                          )}
-                          {post.status === "failed" && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={actionId === post.id}
-                              onClick={() => void runAction(post.id, "retry")}
-                            >
-                              Retry
-                            </Button>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setFilter(status)}
+                  className={cn(
+                    "min-h-9 rounded px-3 py-1.5 text-xs font-medium capitalize",
+                    filter === status
+                      ? "bg-white/[0.06] ring-1 ring-adtraxio-accent/20"
+                      : "text-muted-foreground"
+                  )}
+                  aria-pressed={filter === status}
+                >
+                  {status} ({count})
+                </button>
               );
             }
           )}
         </div>
       )}
+
+      {error && (
+        <div
+          role="alert"
+          className="rounded-md border border-red-500/25 bg-red-500/5 px-4 py-3"
+        >
+          <p className="text-sm text-red-200/90">{error}</p>
+          <button
+            type="button"
+            onClick={() => void loadPosts()}
+            className="mt-2 text-xs font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <PublishingSkeleton />
+      ) : posts.length === 0 ? (
+        <PublishingEmptyState />
+      ) : filter !== "all" ? (
+        <section>
+          <ul className="rounded-md border border-border/60 bg-adtraxio-surface/10">
+            {filteredPosts.map((post) => (
+              <ScheduledPostRow
+                key={post.id}
+                post={post}
+                actionLoading={actionId === post.id}
+                onCancel={
+                  post.status === "scheduled"
+                    ? () => requestCancel(post)
+                    : undefined
+                }
+                onRetry={
+                  post.status === "failed"
+                    ? () => void runAction(post.id, "retry")
+                    : undefined
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <div className="space-y-10">
+          {SECTION_ORDER.map((section) => {
+            const items = posts.filter((p) =>
+              section.statuses.includes(p.status)
+            );
+            if (items.length === 0) return null;
+
+            return (
+              <section key={section.key}>
+                <div className="mb-3">
+                  <h2 className="font-heading text-base tracking-tight text-foreground">
+                    {section.title}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {section.description}
+                  </p>
+                </div>
+                <ul className="rounded-md border border-border/60 bg-adtraxio-surface/10">
+                  {items.map((post) => (
+                    <ScheduledPostRow
+                      key={post.id}
+                      post={post}
+                      actionLoading={actionId === post.id}
+                      onCancel={
+                        post.status === "scheduled"
+                          ? () => requestCancel(post)
+                          : undefined
+                      }
+                      onRetry={
+                        post.status === "failed"
+                          ? () => void runAction(post.id, "retry")
+                          : undefined
+                      }
+                    />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      <PublishCancelDialog
+        open={cancelTarget != null}
+        post={cancelTarget}
+        loading={cancelTarget != null && actionId === cancelTarget.id}
+        onConfirm={() => void confirmCancelPost()}
+        onCancel={() => setCancelTarget(null)}
+      />
     </div>
   );
 }

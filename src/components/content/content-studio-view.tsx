@@ -1,12 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { StudioVisualPanel } from "@/components/content/studio-visual-panel";
 import { CreativeBriefPanel } from "@/components/content/creative-brief-panel";
-import { CreativeOutputPanel } from "@/components/content/creative-output-panel";
+import {
+  CreativeOutputPanel,
+  type CreativeReviewStatus,
+} from "@/components/content/creative-output-panel";
 import { RecentDrafts } from "@/components/content/recent-drafts";
 import { CampaignSelect } from "@/components/content/campaign-select";
+import {
+  ContentWorkflowStrip,
+  type WorkflowStepId,
+} from "@/components/content/content-workflow-strip";
 import { ContentApprovalPanel } from "@/components/collaboration/content-approval-panel";
 import { PublishPanel } from "@/components/publishing/publish-panel";
+import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
 import { getDraft, listRecentDrafts, saveDraft } from "@/lib/content/service";
 import {
   defaultCreativeBrief,
@@ -14,13 +24,41 @@ import {
   type CreativeBrief,
   type GeneratedCreative,
 } from "@/lib/content/types";
+import Link from "next/link";
 import { AskAdtraxioLink } from "@/components/assistant/ask-adtraxio-link";
 import { validateCreativeBrief } from "@/lib/content/validation";
+import { fetchSignedAssetUrl } from "@/lib/content/visual-client";
+import {
+  loadPersistedStudioVisual,
+  persistStudioVisual,
+} from "@/lib/content/visual-persistence";
+import {
+  emptyStudioVisualState,
+  contentPreviewMediaType,
+  getActiveStudioVisualAsset,
+  type StudioVisualState,
+} from "@/lib/content/visual-types";
+
+const STUDIO_SESSION_KEY = "adly_content_studio_session";
+
+function getOrCreateStudioSessionId(): string {
+  if (typeof window === "undefined") return "server";
+  const existing = sessionStorage.getItem(STUDIO_SESSION_KEY);
+  if (existing) return existing;
+  const id = crypto.randomUUID();
+  sessionStorage.setItem(STUDIO_SESSION_KEY, id);
+  return id;
+}
+
+function creativesEqual(a: GeneratedCreative, b: GeneratedCreative): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 export function ContentStudioView() {
   const [brief, setBrief] = useState<CreativeBrief>(defaultCreativeBrief());
   const [briefErrors, setBriefErrors] = useState<Record<string, string>>({});
   const [versions, setVersions] = useState<GeneratedCreative[]>([]);
+  const [baselines, setBaselines] = useState<GeneratedCreative[]>([]);
   const [activeVersionIndex, setActiveVersionIndex] = useState(0);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [recentDrafts, setRecentDrafts] = useState<ContentDraftSummary[]>([]);
@@ -34,9 +72,25 @@ export function ContentStudioView() {
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
+    null
+  );
+  const [savedSinceEdit, setSavedSinceEdit] = useState(false);
+  const [studioSessionId] = useState(() => getOrCreateStudioSessionId());
+  const [studioVisual, setStudioVisual] = useState<StudioVisualState>(
+    emptyStudioVisualState()
+  );
+  const [visualAttached, setVisualAttached] = useState(false);
+  const [previewVisualUrl, setPreviewVisualUrl] = useState<string | null>(null);
+  const [imageConfigured, setImageConfigured] = useState(true);
+  const [videoConfigured, setVideoConfigured] = useState(true);
+  const [audioConfigured, setAudioConfigured] = useState(true);
 
   const activeCreative = versions[activeVersionIndex];
+  const baseline = baselines[activeVersionIndex];
+  const activeVisualAsset = getActiveStudioVisualAsset(studioVisual);
+  const previewVisualType =
+    contentPreviewMediaType(activeVisualAsset) ?? "image";
 
   const refreshDrafts = useCallback(async () => {
     const result = await listRecentDrafts();
@@ -61,6 +115,69 @@ export function ContentStudioView() {
       });
   }, []);
 
+  useEffect(() => {
+    fetch("/api/ai/media/image")
+      .then((res) => res.json())
+      .then((data: { configured?: boolean }) => {
+        setImageConfigured(data.configured !== false);
+      })
+      .catch(() => setImageConfigured(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/ai/media/video")
+      .then((res) => res.json())
+      .then((data: { configured?: boolean }) => {
+        setVideoConfigured(data.configured !== false);
+      })
+      .catch(() => setVideoConfigured(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/ai/media/speech")
+      .then((res) => res.json())
+      .then((data: { configured?: boolean }) => {
+        setAudioConfigured(data.configured !== false);
+      })
+      .catch(() => setAudioConfigured(false));
+  }, []);
+
+  useEffect(() => {
+    const persisted = loadPersistedStudioVisual(draftId, studioSessionId);
+    if (persisted.assets.length > 0) {
+      setStudioVisual(persisted);
+    }
+  }, [draftId, studioSessionId]);
+
+  useEffect(() => {
+    persistStudioVisual(draftId, studioSessionId, studioVisual);
+  }, [draftId, studioSessionId, studioVisual]);
+
+  useEffect(() => {
+    if (!visualAttached || !studioVisual.activeAssetId) {
+      setPreviewVisualUrl(null);
+      return;
+    }
+    void fetchSignedAssetUrl(studioVisual.activeAssetId).then((url) => {
+      setPreviewVisualUrl(url);
+    });
+  }, [visualAttached, studioVisual.activeAssetId]);
+
+  const reviewStatus: CreativeReviewStatus = useMemo(() => {
+    if (!activeCreative) return "empty";
+    if (saveMessage && savedSinceEdit) return "saved";
+    if (baseline && !creativesEqual(activeCreative, baseline)) return "edited";
+    return "generated";
+  }, [activeCreative, baseline, saveMessage, savedSinceEdit]);
+
+  const workflowStep: WorkflowStepId = useMemo(() => {
+    if (draftId && saveMessage) return "save";
+    if (activeCreative && reviewStatus === "edited") return "edit";
+    if (activeCreative) return "review";
+    if (generating) return "generate";
+    return "brief";
+  }, [activeCreative, draftId, generating, reviewStatus, saveMessage]);
+
   async function runGeneration(options?: { variationOf?: GeneratedCreative }) {
     const errors = validateCreativeBrief(brief);
     setBriefErrors(errors);
@@ -72,6 +189,7 @@ export function ContentStudioView() {
     setGenerationError(null);
     setSaveMessage(null);
     setCopyMessage(null);
+    setSavedSinceEdit(false);
 
     try {
       const response = await fetch("/api/ai/generate-content", {
@@ -98,7 +216,7 @@ export function ContentStudioView() {
       }
 
       if (!payload.creative) {
-        setGenerationError("AI returned an invalid response.");
+        setGenerationError("We could not read the generated creative. Try again.");
         return;
       }
 
@@ -106,9 +224,11 @@ export function ContentStudioView() {
 
       if (options?.variationOf) {
         setVersions((prev) => [...prev, payload.creative!]);
+        setBaselines((prev) => [...prev, payload.creative!]);
         setActiveVersionIndex((prev) => prev + 1);
       } else {
         setVersions([payload.creative]);
+        setBaselines([payload.creative]);
         setActiveVersionIndex(0);
       }
     } catch {
@@ -130,6 +250,7 @@ export function ContentStudioView() {
   }
 
   function handleCreativeChange(creative: GeneratedCreative) {
+    setSavedSinceEdit(false);
     setVersions((prev) =>
       prev.map((item, index) =>
         index === activeVersionIndex ? creative : item
@@ -147,6 +268,7 @@ export function ContentStudioView() {
       id: draftId ?? undefined,
       brief,
       creative: activeCreative,
+      studioVisual,
       status: "draft",
     });
 
@@ -159,6 +281,7 @@ export function ContentStudioView() {
 
     if (result.data) {
       setDraftId(result.data.id);
+      setSavedSinceEdit(true);
 
       if (selectedCampaignId) {
         try {
@@ -195,11 +318,15 @@ export function ContentStudioView() {
 
     setBrief(result.data.brief);
     setVersions([result.data.creative]);
+    setBaselines([result.data.creative]);
     setActiveVersionIndex(0);
     setDraftId(result.data.id);
+    setStudioVisual(result.data.studioVisual ?? emptyStudioVisualState());
+    setVisualAttached(Boolean(result.data.studioVisual?.activeAssetId));
     setBriefErrors({});
     setGenerationError(null);
-    setSaveMessage(null);
+    setSaveMessage("Draft loaded.");
+    setSavedSinceEdit(true);
     setCopyMessage(null);
   }
 
@@ -222,6 +349,7 @@ export function ContentStudioView() {
         id: draftId ?? undefined,
         brief,
         creative: activeCreative,
+        studioVisual,
         status: "draft",
       });
       setSaving(false);
@@ -267,49 +395,70 @@ export function ContentStudioView() {
 
   return (
     <div className="space-y-8">
-      <header className="border-b border-border/60 pb-6">
-        <p className="text-xs font-medium text-muted-foreground">Create</p>
-        <h1 className="font-heading mt-1 text-3xl tracking-tight text-foreground sm:text-4xl">
-          Content Studio
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Brief your creative, generate advertising copy, refine it, and save
-          drafts for your next campaign.
-        </p>
+      <PageHeader
+        title="Content Studio"
+        description="Create platform-ready content with your brand, audience, and goal in context."
+      >
+        {activeCreative ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={saving || generating}
+            onClick={() => void handleSaveDraft()}
+          >
+            {saving ? "Saving…" : "Save draft"}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            disabled={generating || aiNotConfigured}
+            onClick={() => void runGeneration()}
+          >
+            {generating ? "Generating…" : "Generate"}
+          </Button>
+        )}
+        <Link href="/create/creative">
+          <Button type="button" size="sm" variant="outline">
+            Creative Studio
+          </Button>
+        </Link>
         <AskAdtraxioLink
           variant="button"
-          className="mt-4"
-          label="Improve with ADTRAXIO AI"
+          label="Open in Copilot"
           prompt={
             activeCreative
               ? `Improve this content draft for ${brief.platform}:\nHook: ${activeCreative.hook}\nHeadline: ${activeCreative.headline}\nPrimary copy: ${activeCreative.primaryCopy}\nCTA: ${activeCreative.cta}`
               : "Help me create stronger content based on my top-performing posts and current brief."
           }
         />
-        <p className="mt-3 text-xs text-muted-foreground/80">
-          Connect a social account to publish your content later.{" "}
-          <a
-            href="/social"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Manage connections
-          </a>
-        </p>
-      </header>
+      </PageHeader>
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(300px,38%)_minmax(0,62%)] lg:gap-0 lg:divide-x lg:divide-border/60">
-        <div className="lg:pr-10">
+      <ContentWorkflowStrip activeStep={workflowStep} />
+
+      <p className="text-xs text-muted-foreground">
+        Connect a social account to publish later.{" "}
+        <a
+          href="/social"
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          Manage connections
+        </a>
+      </p>
+
+      <div className="grid gap-10 lg:grid-cols-[minmax(280px,36%)_minmax(0,64%)] lg:gap-12 lg:items-start">
+        <div className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
           <CreativeBriefPanel
             brief={brief}
             errors={briefErrors}
             generating={generating}
             aiNotConfigured={aiNotConfigured}
             onChange={handleBriefChange}
-            onGenerate={() => runGeneration()}
+            onGenerate={() => void runGeneration()}
           />
         </div>
 
-        <div className="lg:pl-10">
+        <div className="min-w-0">
           <div className="mb-6 max-w-sm">
             <CampaignSelect
               value={selectedCampaignId}
@@ -318,32 +467,60 @@ export function ContentStudioView() {
             />
           </div>
 
+          <div className="mb-8">
+            <StudioVisualPanel
+              defaultPrompt={
+                activeCreative?.creativeDirection?.trim() ||
+                brief.topic.trim() ||
+                brief.additionalContext.trim()
+              }
+              visualState={studioVisual}
+              attachedToContent={visualAttached}
+              disabled={saving || generating}
+              imageConfigured={imageConfigured}
+              videoConfigured={videoConfigured}
+              audioConfigured={audioConfigured}
+              onVisualStateChange={setStudioVisual}
+              onAttachToContent={() => setVisualAttached(true)}
+              onSaveVisual={() => void handleSaveDraft()}
+            />
+          </div>
+
           <CreativeOutputPanel
             versions={versions}
             activeVersionIndex={activeVersionIndex}
+            platform={brief.platform}
+            contentType={brief.contentType}
             generating={generating}
             saving={saving}
             saveMessage={saveMessage}
             copyMessage={copyMessage}
             generationError={generationError}
+            aiNotConfigured={aiNotConfigured}
+            reviewStatus={reviewStatus}
             onSelectVersion={setActiveVersionIndex}
             onCreativeChange={handleCreativeChange}
-            onRegenerate={() => runGeneration()}
+            onRegenerate={() => void runGeneration()}
             onCreateVariation={() => {
               if (activeCreative) {
-                runGeneration({ variationOf: activeCreative });
+                void runGeneration({ variationOf: activeCreative });
               }
             }}
-            onSaveDraft={handleSaveDraft}
-            onCopy={handleCopy}
-            onPublish={handleOpenPublish}
+            onSaveDraft={() => void handleSaveDraft()}
+            onCopy={() => void handleCopy()}
+            onPublish={() => void handleOpenPublish()}
             canPublish={Boolean(activeCreative)}
+            onRetryGenerate={() => void runGeneration()}
+            previewVisualUrl={previewVisualUrl}
+            previewVisualType={previewVisualType}
           />
         </div>
       </div>
 
       {publishMessage && (
-        <p className="text-sm text-adtraxio-accent">{publishMessage}</p>
+        <p className="text-sm text-muted-foreground" role="status">
+          {publishMessage}
+        </p>
       )}
 
       <PublishPanel
@@ -360,7 +537,7 @@ export function ContentStudioView() {
         drafts={recentDrafts}
         activeDraftId={draftId}
         loading={draftsLoading}
-        onSelect={handleLoadDraft}
+        onSelect={(id) => void handleLoadDraft(id)}
       />
     </div>
   );

@@ -6,24 +6,8 @@ import { buildAssistantHref } from "@/components/assistant/ask-adtraxio-link";
 import { PrepareExecutionButton } from "@/components/assistant/prepare-execution-button";
 import { Button } from "@/components/ui/button";
 import { recommendationSupportsPrepare } from "@/lib/execution/plan-builder";
+import { CopilotSection } from "@/components/copilot/copilot-section";
 import type { GrowthBriefRecord } from "@/lib/agent/types";
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3 rounded-xl border border-border/60 bg-adtraxio-surface/25 p-5">
-      <h2 className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
 
 export function GrowthBriefDetail({ brief }: { brief: GrowthBriefRecord }) {
   const working = brief.insights.filter(
@@ -51,12 +35,12 @@ export function GrowthBriefDetail({ brief }: { brief: GrowthBriefRecord }) {
           All briefs
         </Link>
 
-        <header>
+        <header className="border-b border-border/50 pb-6">
           <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            {brief.briefType} growth brief
+            Growth brief · {brief.briefType}
           </p>
-          <h1 className="mt-1 font-heading text-2xl tracking-tight">
-            Growth brief
+          <h1 className="mt-1 font-heading text-2xl tracking-tight sm:text-3xl">
+            Intelligence report
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-foreground/90">
             {brief.summary}
@@ -68,7 +52,7 @@ export function GrowthBriefDetail({ brief }: { brief: GrowthBriefRecord }) {
         </header>
 
         {working.length > 0 && (
-          <Section title="What's working">
+          <CopilotSection title="What's working">
             <ul className="space-y-3 text-sm">
               {working.map((item, idx) => (
                 <li key={idx}>
@@ -77,11 +61,11 @@ export function GrowthBriefDetail({ brief }: { brief: GrowthBriefRecord }) {
                 </li>
               ))}
             </ul>
-          </Section>
+          </CopilotSection>
         )}
 
         {attention.length > 0 && (
-          <Section title="Needs attention">
+          <CopilotSection title="Needs attention">
             <ul className="space-y-3 text-sm">
               {attention.map((item, idx) => (
                 <li key={idx}>
@@ -90,11 +74,11 @@ export function GrowthBriefDetail({ brief }: { brief: GrowthBriefRecord }) {
                 </li>
               ))}
             </ul>
-          </Section>
+          </CopilotSection>
         )}
 
         {brief.insights.length > 0 && (
-          <Section title="What changed">
+          <CopilotSection title="What changed">
             <ul className="space-y-3 text-sm">
               {brief.insights.map((item, idx) => (
                 <li key={idx} className="border-t border-border/40 pt-3 first:border-0 first:pt-0">
@@ -110,11 +94,11 @@ export function GrowthBriefDetail({ brief }: { brief: GrowthBriefRecord }) {
                 </li>
               ))}
             </ul>
-          </Section>
+          </CopilotSection>
         )}
 
         {brief.recommendations.length > 0 && (
-          <Section title="Recommended actions">
+          <CopilotSection title="Recommended actions">
             <ul className="space-y-4">
               {brief.recommendations.map((rec, idx) => (
                 <li key={idx} className="text-sm">
@@ -144,10 +128,10 @@ export function GrowthBriefDetail({ brief }: { brief: GrowthBriefRecord }) {
                 </li>
               ))}
             </ul>
-          </Section>
+          </CopilotSection>
         )}
 
-        <Section title="Metrics">
+        <CopilotSection title="Metrics" variant="inset">
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             {brief.metrics.engagementChangePercent != null && (
               <>
@@ -163,7 +147,7 @@ export function GrowthBriefDetail({ brief }: { brief: GrowthBriefRecord }) {
             <dt className="text-muted-foreground">Scheduled (next 7d)</dt>
             <dd>{brief.metrics.scheduledPostsCount}</dd>
           </dl>
-        </Section>
+        </CopilotSection>
       </div>
     </div>
   );

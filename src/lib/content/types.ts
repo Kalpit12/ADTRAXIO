@@ -1,3 +1,5 @@
+import type { StudioVisualState } from "./visual-types";
+
 export type ContentType =
   | "social_post"
   | "ad_creative"
@@ -50,6 +52,7 @@ export interface ContentDraft {
   organizationId: string;
   brief: CreativeBrief;
   creative: GeneratedCreative;
+  studioVisual?: StudioVisualState;
   status: ContentStatus;
   createdAt: string;
   updatedAt: string;

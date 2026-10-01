@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { getAppUrl } from "@/lib/env/app-url";
 
 let stripeClient: Stripe | null = null;
 
@@ -21,10 +22,4 @@ export function getStripe(): Stripe {
   return stripeClient;
 }
 
-export function getAppUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    process.env.VERCEL_URL?.trim()?.replace(/^/, "https://") ||
-    "http://localhost:3000"
-  );
-}
+export { getAppUrl };

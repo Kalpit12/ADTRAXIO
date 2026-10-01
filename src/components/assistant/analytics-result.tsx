@@ -1,5 +1,7 @@
 "use client";
 
+import { EvidenceBlock } from "@/components/copilot/evidence-block";
+
 interface AnalyticsOverviewData {
   totals?: {
     impressions?: number | null;
@@ -51,29 +53,26 @@ export function AnalyticsResult({ data }: AnalyticsResultProps) {
   ].filter((c) => c.value != null);
 
   return (
-    <div className="my-3 max-w-full overflow-hidden rounded-lg border border-border/60 bg-adtraxio-surface/40 p-4">
-      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        Performance
-      </p>
+    <EvidenceBlock source="analytics" title="Evidence · Analytics">
       {data.period?.label && (
-        <p className="mt-1 text-xs text-muted-foreground">{data.period.label}</p>
+        <p className="mb-3 text-xs text-muted-foreground">{data.period.label}</p>
       )}
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {metrics.map((metric) => (
           <div key={metric.label} className="min-w-0">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
               {metric.label}
             </p>
-            <p className="mt-0.5 text-sm font-medium tabular-nums text-foreground">
+            <p className="mt-0.5 font-heading text-lg tabular-nums text-foreground">
               {formatNumber(metric.value)}
             </p>
           </div>
         ))}
       </div>
       {changes.length > 0 && (
-        <div className="mt-4 border-t border-border/50 pt-3">
+        <div className="mt-4 border-t border-border/40 pt-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            What changed
+            Change vs prior period
           </p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
             {changes.map((change) => {
@@ -99,6 +98,6 @@ export function AnalyticsResult({ data }: AnalyticsResultProps) {
           </div>
         </div>
       )}
-    </div>
+    </EvidenceBlock>
   );
 }

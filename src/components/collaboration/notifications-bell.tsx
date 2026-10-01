@@ -20,14 +20,18 @@ export function NotificationsBell() {
   return (
     <Link
       href="/notifications"
-      className="relative inline-flex size-8 items-center justify-center rounded-md border border-border/70 text-muted-foreground transition-colors hover:text-foreground"
-      aria-label="Notifications"
+      className="relative inline-flex size-8 items-center justify-center rounded-md border border-border/70 bg-transparent text-muted-foreground transition-colors hover:border-border hover:bg-white/[0.03] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-adtraxio-accent/30"
+      aria-label={
+        unreadCount > 0
+          ? `Notifications, ${unreadCount} unread`
+          : "Notifications"
+      }
     >
-      <Bell className="size-4" />
+      <Bell className="size-4" strokeWidth={1.5} />
       {unreadCount > 0 && (
         <span
           className={cn(
-            "absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-adtraxio-accent px-1 text-[10px] font-medium text-background"
+            "absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-background bg-adtraxio-accent px-1 text-[10px] font-medium text-primary-foreground"
           )}
         >
           {unreadCount > 9 ? "9+" : unreadCount}

@@ -3,6 +3,7 @@ import {
   Bot,
   Calendar,
   CreditCard,
+  ClipboardCheck,
   FileText,
   LayoutDashboard,
   Megaphone,
@@ -35,12 +36,13 @@ export const SECONDARY_NAV: NavItem[] = [
   { label: "Publishing", href: "/publishing", icon: Send },
   { label: "Social", href: "/social", icon: Share2 },
   { label: "Clients", href: "/clients", icon: Users },
+  { label: "Approvals", href: "/approvals", icon: ClipboardCheck },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Messages", href: "/messages", icon: MessageSquare },
 ];
 
 export const AI_NAV: NavItem[] = [
-  { label: "Assistant", href: "/assistant", icon: Bot },
+  { label: "Growth Copilot", href: "/assistant", icon: Bot },
 ];
 
 export const FOOTER_NAV: NavItem[] = [
@@ -58,6 +60,7 @@ export const WORKSPACE_ROUTES = [
   "/publishing",
   "/social",
   "/clients",
+  "/approvals",
   "/reports",
   "/messages",
   "/notifications",

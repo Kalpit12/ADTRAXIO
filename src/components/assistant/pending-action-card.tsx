@@ -1,6 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  ActionStatusBadge,
+  pendingActionVisualStatus,
+} from "@/components/copilot/action-status-badge";
 import type { PendingActionRecord } from "@/lib/assistant/types";
 
 interface PendingActionCardProps {
@@ -22,6 +26,10 @@ function actionTitle(type: PendingActionRecord["actionType"]): string {
       return "Create campaign";
     case "save_brand_memory":
       return "Save brand preference";
+    case "execute_optimization":
+      return "Execute optimization";
+    case "rollback_optimization":
+      return "Rollback optimization";
     default:
       return type.replaceAll("_", " ");
   }
@@ -39,8 +47,27 @@ function confirmLabel(type: PendingActionRecord["actionType"]): string {
       return "Confirm create";
     case "save_brand_memory":
       return "Save preference";
+    case "execute_optimization":
+      return "Confirm execution";
+    case "rollback_optimization":
+      return "Confirm rollback";
     default:
       return "Confirm";
+  }
+}
+
+function consequenceCopy(type: PendingActionRecord["actionType"]): string {
+  switch (type) {
+    case "publish_post":
+      return "This will publish immediately to the connected account.";
+    case "schedule_post":
+      return "This will schedule the post for the time shown.";
+    case "cancel_post":
+      return "This will cancel the scheduled or pending post.";
+    case "save_brand_memory":
+      return "This will save a preference to Brand Brain after you confirm.";
+    default:
+      return "Review the details below before confirming.";
   }
 }
 
@@ -58,74 +85,67 @@ export function PendingActionCard({
   const name = typeof payload.name === "string" ? payload.name : null;
   const platform =
     typeof payload.platform === "string" ? payload.platform : null;
-  const socialAccountId =
-    typeof payload.socialAccountId === "string"
-      ? payload.socialAccountId
-      : null;
 
   return (
-    <div className="my-4 max-w-full overflow-hidden rounded-lg border border-amber-500/25 bg-amber-500/5 p-4">
-      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-amber-400/90">
-        {action.actionType === "save_brand_memory"
-          ? "Save brand preference?"
-          : "Ready to execute"}
-      </p>
-      <p className="mt-2 text-sm font-semibold text-foreground">
-        {actionTitle(action.actionType)}
-      </p>
-
-      {name && (
-        <p className="mt-1 text-sm text-foreground/80">{name}</p>
-      )}
-
-      <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
-        <div className="flex gap-2">
-          <dt className="shrink-0 font-medium text-foreground/70">Action</dt>
-          <dd>{actionTitle(action.actionType)}</dd>
-        </div>
-        {platform && (
-          <div className="flex gap-2">
-            <dt className="shrink-0 font-medium text-foreground/70">Platform</dt>
-            <dd className="capitalize">{platform}</dd>
-          </div>
-        )}
-        {socialAccountId && (
-          <div className="flex gap-2">
-            <dt className="shrink-0 font-medium text-foreground/70">Account</dt>
-            <dd className="truncate font-mono text-[10px]">{socialAccountId}</dd>
-          </div>
-        )}
-        {scheduledFor && (
-          <div className="flex gap-2">
-            <dt className="shrink-0 font-medium text-foreground/70">Schedule</dt>
-            <dd>{new Date(scheduledFor).toLocaleString()}</dd>
-          </div>
-        )}
-      </dl>
-
-      {caption && (
-        <div className="mt-3 max-w-full rounded-md border border-border/50 bg-background/40 p-3">
-          <p className="break-words text-sm leading-relaxed text-foreground/85">
-            {caption}
+    <div
+      className="my-5 max-w-full overflow-hidden rounded-md border border-border/70 bg-adtraxio-surface/20"
+      role="region"
+      aria-label="Action awaiting confirmation"
+    >
+      <div className="border-b border-border/50 px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-semibold text-foreground">
+            {actionTitle(action.actionType)}
           </p>
+          <ActionStatusBadge status={pendingActionVisualStatus(action.status)} />
         </div>
-      )}
-
-      {!caption && action.summary && (
-        <p className="mt-2 break-words text-xs text-muted-foreground">
-          {action.summary}
+        <p className="mt-1 text-xs text-muted-foreground">
+          {consequenceCopy(action.actionType)}
         </p>
-      )}
+      </div>
 
-      <p className="mt-3 text-xs text-muted-foreground">
-        {action.actionType === "publish_post"
-          ? "This will publish immediately."
-          : action.actionType === "schedule_post"
-            ? "This will schedule the post."
-            : "This action cannot be undone easily."}
-      </p>
+      <div className="space-y-3 px-4 py-4 text-sm sm:px-5">
+        {name && <p className="font-medium text-foreground">{name}</p>}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+        <dl className="grid gap-2 text-xs sm:grid-cols-2">
+          {platform && (
+            <div>
+              <dt className="text-muted-foreground">Platform</dt>
+              <dd className="capitalize text-foreground">{platform}</dd>
+            </div>
+          )}
+          {scheduledFor && (
+            <div>
+              <dt className="text-muted-foreground">When</dt>
+              <dd className="text-foreground">
+                {new Date(scheduledFor).toLocaleString()}
+              </dd>
+            </div>
+          )}
+          <div className="sm:col-span-2">
+            <dt className="text-muted-foreground">Created</dt>
+            <dd className="text-foreground">
+              {new Date(action.createdAt).toLocaleString()}
+            </dd>
+          </div>
+        </dl>
+
+        {caption && (
+          <div className="rounded border border-border/50 bg-background/30 p-3">
+            <p className="break-words text-sm leading-relaxed text-foreground/90">
+              {caption}
+            </p>
+          </div>
+        )}
+
+        {!caption && action.summary && (
+          <p className="break-words text-sm text-muted-foreground">
+            {action.summary}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 border-t border-border/50 px-4 py-3 sm:px-5">
         <Button
           size="sm"
           variant="outline"
@@ -135,7 +155,7 @@ export function PendingActionCard({
           Cancel
         </Button>
         <Button size="sm" onClick={onConfirm} disabled={confirming}>
-          {confirming ? "Confirming..." : confirmLabel(action.actionType)}
+          {confirming ? "Confirming…" : confirmLabel(action.actionType)}
         </Button>
       </div>
     </div>

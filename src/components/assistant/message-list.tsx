@@ -45,15 +45,20 @@ export function MessageList({
     <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
       <div className="mx-auto flex min-h-full w-full max-w-[820px] flex-col px-3 py-6 sm:px-4">
         {error && (
-          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
-            <p className="text-sm text-red-300">
-              Something went wrong while processing that request.
+          <div
+            role="alert"
+            className="mb-4 rounded-md border border-red-500/25 bg-red-500/5 px-4 py-3"
+          >
+            <p className="text-sm text-red-200/90">
+              {error.includes("limit") || error.startsWith("Unable")
+                ? error
+                : "Something went wrong while processing that request."}
             </p>
             {onRetry && (
               <button
                 type="button"
                 onClick={onRetry}
-                className="mt-2 text-xs font-medium text-red-200 underline-offset-2 hover:underline"
+                className="mt-2 text-xs font-medium text-foreground underline-offset-2 hover:underline"
               >
                 Try again
               </button>
@@ -62,7 +67,7 @@ export function MessageList({
         )}
 
         {loading ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <AssistantLoading />
             <AssistantLoading />
           </div>
@@ -72,7 +77,7 @@ export function MessageList({
             onSelectPrompt={onSelectPrompt}
           />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {messages.map((message) => {
               if (message.role === "user") {
                 return (

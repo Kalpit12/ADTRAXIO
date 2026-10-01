@@ -1,9 +1,10 @@
 "use client";
 
 import { PlatformIcon } from "@/components/dashboard/platform-icon";
+import { ReportExecutiveSummary } from "@/components/reports/report-executive-summary";
+import { ReportSnapshotHeader } from "@/components/reports/report-snapshot-header";
 import {
   formatReportDate,
-  formatReportDateTime,
   formatReportMetric,
   formatReportPercent,
   formatReportRate,
@@ -40,7 +41,7 @@ function MetricTile({
   sub?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-secondary/10 px-4 py-3">
+    <div className="border border-border/60 bg-adtraxio-surface/10 px-4 py-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 font-heading text-2xl tracking-tight text-foreground">{value}</p>
       {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
@@ -66,46 +67,9 @@ export function ReportDisplay({
         <div className="no-print flex items-center justify-end gap-2">{actions}</div>
       )}
 
-      <header className="space-y-3 border-b border-border/60 pb-8">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          {snapshot.client.name}
-        </p>
-        <h1 className="font-heading text-3xl tracking-tight text-foreground sm:text-4xl">
-          {snapshot.report.name}
-        </h1>
-        {snapshot.report.description && (
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            {snapshot.report.description}
-          </p>
-        )}
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-          <span>
-            Period: {formatReportDate(snapshot.period.from)} –{" "}
-            {formatReportDate(snapshot.period.to)}
-          </span>
-          <span>Generated: {formatReportDateTime(snapshot.generatedAt)}</span>
-        </div>
-      </header>
+      <ReportSnapshotHeader snapshot={snapshot} />
 
-      {aiSummary && (
-        <Section title="Executive summary">
-          <div className="rounded-lg border border-border/60 bg-secondary/10 p-5">
-            <p className="text-sm leading-relaxed text-foreground">
-              {aiSummary.executiveSummary}
-            </p>
-            {aiSummary.keyObservations.length > 0 && (
-              <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                {aiSummary.keyObservations.map((item) => (
-                  <li key={item} className="flex gap-2">
-                    <span className="text-adtraxio-accent">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </Section>
-      )}
+      {aiSummary && <ReportExecutiveSummary aiSummary={aiSummary} />}
 
       <Section title="Performance overview">
         {!overview.hasData ? (

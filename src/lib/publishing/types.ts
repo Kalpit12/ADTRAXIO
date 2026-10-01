@@ -58,6 +58,8 @@ export interface CreatePublishRequest {
   caption: string;
   mediaType?: PublishingMediaType | null;
   mediaUrl?: string | null;
+  /** Private ai_media_assets id — staged server-side at publish/schedule time only. */
+  mediaAssetId?: string | null;
   timezone?: string | null;
 }
 

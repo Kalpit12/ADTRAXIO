@@ -10,11 +10,11 @@ const LABELS: Record<ApprovalStatus, string> = {
 };
 
 const STYLES: Record<ApprovalStatus, string> = {
-  pending: "bg-amber-500/10 text-amber-300",
-  approved: "bg-adtraxio-accent/15 text-adtraxio-accent",
-  rejected: "bg-destructive/10 text-destructive",
-  changes_requested: "bg-blue-500/10 text-blue-300",
-  cancelled: "bg-secondary text-muted-foreground",
+  pending: "border-amber-500/35 text-foreground",
+  approved: "border-adtraxio-accent/30 text-foreground",
+  rejected: "border-red-500/30 text-red-200/90",
+  changes_requested: "border-border/80 text-foreground",
+  cancelled: "border-border/70 text-muted-foreground",
 };
 
 export function ApprovalStatusBadge({
@@ -27,7 +27,7 @@ export function ApprovalStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex rounded border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em]",
         STYLES[status],
         className
       )}

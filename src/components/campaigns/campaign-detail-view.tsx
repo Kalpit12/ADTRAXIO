@@ -7,6 +7,8 @@ import { PlatformIcon } from "@/components/dashboard/platform-icon";
 import { AskAdtraxioLink } from "@/components/assistant/ask-adtraxio-link";
 import { CampaignStatusBadge } from "@/components/campaigns/campaign-status";
 import { CampaignApprovalPanel } from "@/components/collaboration/campaign-approval-panel";
+import { PublishStatusBadge } from "@/components/publishing/publish-status-badge";
+import type { PublishingStatus } from "@/lib/publishing/types";
 import { IntelligencePanel } from "@/components/intelligence/intelligence-panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -317,17 +319,34 @@ export function CampaignDetailView({ campaignId }: CampaignDetailViewProps) {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-32 animate-pulse rounded-lg bg-secondary/30" />
-        <div className="h-48 animate-pulse rounded-lg bg-secondary/30" />
+      <div className="space-y-10" aria-busy="true" aria-label="Loading campaign">
+        <div className="space-y-4 border-b border-border/60 pb-6">
+          <div className="h-3 w-24 animate-pulse rounded bg-secondary/40" />
+          <div className="h-9 w-2/3 max-w-md animate-pulse rounded bg-secondary/40" />
+          <div className="h-4 w-48 animate-pulse rounded bg-secondary/30" />
+        </div>
+        <div className="grid gap-px overflow-hidden rounded-md border border-border/60 sm:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-20 animate-pulse bg-secondary/20" />
+          ))}
+        </div>
+        <div className="h-40 animate-pulse rounded-md bg-secondary/20" />
       </div>
     );
   }
 
   if (error || !campaign) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-        {error ?? "Campaign not found."}
+      <div className="space-y-4">
+        <p role="alert" className="rounded-md border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-200/90">
+          {error ?? "Campaign not found."}
+        </p>
+        <Button type="button" variant="outline" size="sm" onClick={() => void loadCampaign()}>
+          Try again
+        </Button>
+        <Button type="button" variant="ghost" size="sm" asChild>
+          <Link href="/campaigns">Back to campaigns</Link>
+        </Button>
       </div>
     );
   }
@@ -358,7 +377,7 @@ export function CampaignDetailView({ campaignId }: CampaignDetailViewProps) {
       <header className="border-b border-border/60 pb-6">
         <Link
           href="/campaigns"
-          className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground"
         >
           ← Campaigns
         </Link>
@@ -478,30 +497,51 @@ export function CampaignDetailView({ campaignId }: CampaignDetailViewProps) {
       )}
 
       <section className="space-y-4">
-        <h2 className="text-sm font-medium text-foreground">Overview</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Overview
+            </p>
+            <h2 className="font-heading text-lg tracking-tight text-foreground">
+              Campaign snapshot
+            </h2>
+          </div>
+          <Link
+            href="/publishing"
+            className="text-xs font-medium text-adtraxio-accent hover:underline"
+          >
+            Open publishing queue
+          </Link>
+        </div>
+        <dl className="grid divide-y divide-border/50 rounded-md border border-border/60 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-5">
           {[
             { label: "Content", value: String(campaign.contentCount ?? 0) },
-            { label: "Platforms", value: String(campaign.accountCount ?? 0) },
+            { label: "Accounts", value: String(campaign.accountCount ?? 0) },
             { label: "Published", value: String(campaign.publishing.published) },
             { label: "Scheduled", value: String(campaign.publishing.scheduled) },
             { label: "Failed", value: String(campaign.publishing.failed) },
           ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-lg border border-border/60 px-4 py-4"
-            >
-              <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
-              <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+            <div key={item.label} className="px-4 py-4">
+              <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {item.label}
+              </dt>
+              <dd className="mt-1 font-heading text-2xl tabular-nums text-foreground">
                 {item.value}
-              </p>
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
       </section>
 
       <section className="space-y-4 border-t border-border/60 pt-10">
-        <h2 className="text-sm font-medium text-foreground">Performance</h2>
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            Results
+          </p>
+          <h2 className="font-heading text-lg tracking-tight text-foreground">
+            Performance
+          </h2>
+        </div>
         {performance?.hasData ? (
           <>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -583,8 +623,18 @@ export function CampaignDetailView({ campaignId }: CampaignDetailViewProps) {
       </section>
 
       <section className="space-y-4 border-t border-border/60 pt-10">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-foreground">Content</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Publishing
+            </p>
+            <h2 className="font-heading text-lg tracking-tight text-foreground">
+              Campaign content
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              What you are publishing for this initiative. Schedule from Content Studio or the publishing queue.
+            </p>
+          </div>
           <Button
             size="sm"
             variant="outline"
@@ -663,8 +713,16 @@ export function CampaignDetailView({ campaignId }: CampaignDetailViewProps) {
                       <td className="py-3 pr-4 capitalize text-muted-foreground">
                         {item.platform ?? "—"}
                       </td>
-                      <td className="py-3 pr-4 capitalize text-muted-foreground">
-                        {item.publishingStatus ?? item.status ?? "—"}
+                      <td className="py-3 pr-4">
+                        {item.publishingStatus ? (
+                          <PublishStatusBadge
+                            status={item.publishingStatus as PublishingStatus}
+                          />
+                        ) : (
+                          <span className="text-xs capitalize text-muted-foreground">
+                            {item.status ?? "—"}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 pr-4 text-muted-foreground">
                         {formatDateTime(item.publishedAt)}
@@ -692,8 +750,15 @@ export function CampaignDetailView({ campaignId }: CampaignDetailViewProps) {
       </section>
 
       <section className="space-y-4 border-t border-border/60 pt-10">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-foreground">Accounts</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Channels
+            </p>
+            <h2 className="font-heading text-lg tracking-tight text-foreground">
+              Accounts & platforms
+            </h2>
+          </div>
           <Button
             size="sm"
             variant="outline"

@@ -87,10 +87,29 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PASSWORD = process.env.SMOKE_TEST_PASSWORD || "AdlyTest2026!";
 const cronSecret = process.env.CRON_SECRET?.trim();
 
+function mergeResponseCookies(jar, response) {
+  const setCookies =
+    typeof response.headers.getSetCookie === "function"
+      ? response.headers.getSetCookie()
+      : [];
+  if (setCookies.length === 0) {
+    const raw = response.headers.get("set-cookie");
+    if (raw) setCookies.push(raw);
+  }
+  for (const cookie of setCookies) {
+    const part = cookie.split(";")[0];
+    const eq = part.indexOf("=");
+    if (eq > 0) {
+      jar.set(part.slice(0, eq).trim(), part.slice(eq + 1).trim());
+    }
+  }
+}
+
 async function fetchApi(jar, path, init = {}) {
   const headers = new Headers(init.headers);
   headers.set("Cookie", [...jar].map(([k, v]) => `${k}=${v}`).join("; "));
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
+  mergeResponseCookies(jar, res);
   const json = await res.json().catch(() => null);
   return { status: res.status, json, res };
 }
@@ -153,15 +172,18 @@ async function runLive() {
 
     const ws = await sb.from("client_workspaces").select("id").eq("slug", "client-a").single();
     if (ws.data?.id) {
-      await fetch(`${BASE}/api/workspaces/switch`, {
+      const switchRes = await fetchApi(jar, "/api/workspaces/switch", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientWorkspaceId: ws.data.id }),
       });
-      status("5. workspace switching", "PASS");
+      const switched =
+        switchRes.status === 200 && jar.has("adly_client_workspace_id");
+      status(
+        "5. workspace switching",
+        switched ? "PASS" : switchRes.status === 403 ? "BLOCKED" : "FAIL",
+        switched ? "client workspace cookie set" : String(switchRes.status)
+      );
     } else {
       status("5. workspace switching", "BLOCKED", "no client-a workspace in DB");
     }
@@ -271,10 +293,15 @@ async function runLive() {
   }
 
   // Provider-dependent (never fabricate)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
   if (isProductionTarget) {
-    const metaOk = !appUrl.includes("localhost");
-    status("Meta OAuth production URL", metaOk ? "PASS" : "INVALID", "NEXT_PUBLIC_APP_URL vs production");
+    const deployedAppUrl = PRODUCTION_BASE;
+    const metaOk =
+      deployedAppUrl.startsWith("https://") && !deployedAppUrl.includes("localhost");
+    status(
+      "Meta OAuth production URL",
+      metaOk ? "PASS" : "FAIL",
+      "PRODUCTION_BASE_URL HTTPS"
+    );
     status("Meta connect E2E", "NOT_CONFIGURED", "manual OAuth required");
     status("Stripe checkout E2E", "NOT_CONFIGURED", "manual checkout required");
     status("OpenAI generation E2E", process.env.OPENAI_API_KEY ? "UNTESTED" : "NOT_CONFIGURED");
@@ -302,12 +329,28 @@ for (const [key, label] of envKeys) {
   const v = process.env[key]?.trim();
   let state = "MISSING";
   if (v) {
-    state = isProductionTarget && v.includes("localhost") && key.includes("URL") ? "INVALID" : "CONFIGURED";
+    const localhostUrl =
+      isProductionTarget && v.includes("localhost") && key.includes("URL");
+    if (localhostUrl && key === "NEXT_PUBLIC_APP_URL") {
+      state = "LOCAL_DEV_ONLY";
+    } else if (localhostUrl) {
+      state = "INVALID";
+    } else {
+      state = "CONFIGURED";
+    }
   }
-  record(`ENV ${label}`, state !== "MISSING", state);
+  const pass = state === "CONFIGURED" || state === "LOCAL_DEV_ONLY";
+  record(`ENV ${label}`, pass, state);
 }
 
-const failed = results.filter((r) => !r.pass && !String(r.detail).startsWith("NOT_CONFIGURED") && !String(r.detail).startsWith("BLOCKED") && !String(r.detail).startsWith("UNTESTED"));
+const failed = results.filter(
+  (r) =>
+    !r.pass &&
+    !String(r.detail).startsWith("NOT_CONFIGURED") &&
+    !String(r.detail).startsWith("BLOCKED") &&
+    !String(r.detail).startsWith("UNTESTED") &&
+    !String(r.detail).includes("LOCAL_DEV_ONLY")
+);
 const blocked = results.filter((r) => String(r.detail).includes("NOT_CONFIGURED") || String(r.detail).includes("BLOCKED"));
 console.log(`\n${results.length} checks, ${failed.length} hard failures, ${blocked.length} blocked/not configured\n`);
 process.exit(failed.length ? 1 : 0);

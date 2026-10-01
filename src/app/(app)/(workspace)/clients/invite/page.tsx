@@ -1,8 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { PageHeader } from "@/components/layout/page-header";
+import { WorkspaceError } from "@/components/workspaces/workspace-error";
 import { Button } from "@/components/ui/button";
+import { friendlyWorkspaceError } from "@/lib/workspaces/display";
 
 function InviteAcceptContent() {
   const router = useRouter();
@@ -14,7 +18,7 @@ function InviteAcceptContent() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setMessage("Invalid invitation link.");
+      setMessage("This invitation link is invalid or incomplete.");
       return;
     }
 
@@ -29,17 +33,20 @@ function InviteAcceptContent() {
         const payload = (await response.json()) as {
           ok?: boolean;
           error?: string;
-          clientWorkspaceId?: string;
         };
 
         if (!response.ok) {
           setStatus("error");
-          setMessage(payload.error ?? "Unable to accept invitation.");
+          setMessage(
+            friendlyWorkspaceError(
+              payload.error ?? "Unable to accept invitation."
+            )
+          );
           return;
         }
 
         setStatus("success");
-        setMessage("Invitation accepted. Opening client workspace…");
+        setMessage("You're in. Opening your workspace…");
         router.push("/dashboard");
         router.refresh();
       } catch {
@@ -50,23 +57,29 @@ function InviteAcceptContent() {
   }, [token, router]);
 
   return (
-    <div className="mx-auto flex min-h-[50vh] max-w-md flex-col items-center justify-center text-center">
+    <div className="mx-auto max-w-md space-y-8 py-8">
+      <PageHeader
+        eyebrow="Invitation"
+        title="Join client workspace"
+        description="Accepting adds this workspace to your account."
+      />
+
       {status === "loading" && (
-        <p className="text-sm text-muted-foreground">Accepting invitation…</p>
+        <div className="space-y-3" aria-busy="true">
+          <div className="h-4 w-48 animate-pulse rounded bg-secondary/30" />
+          <p className="text-sm text-muted-foreground">Confirming invitation…</p>
+        </div>
       )}
+
       {status === "success" && (
-        <p className="text-sm text-foreground">{message}</p>
+        <p className="text-sm text-foreground" role="status">{message}</p>
       )}
+
       {status === "error" && (
         <>
-          <p className="text-sm text-destructive">{message}</p>
-          <Button
-            className="mt-4"
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/clients")}
-          >
-            Go to clients
+          <WorkspaceError message={message} />
+          <Button asChild variant="outline" size="sm">
+            <Link href="/clients">Go to client workspaces</Link>
           </Button>
         </>
       )}
@@ -76,7 +89,11 @@ function InviteAcceptContent() {
 
 export default function ClientInvitePage() {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+    <Suspense
+      fallback={
+        <p className="text-sm text-muted-foreground">Loading invitation…</p>
+      }
+    >
       <InviteAcceptContent />
     </Suspense>
   );

@@ -55,7 +55,7 @@ export async function validateUploadFile(file: File): Promise<{
   return validateBuffer(buffer, file.name, file.type);
 }
 
-function validateBuffer(
+export function validateBuffer(
   buffer: Buffer,
   fileName: string,
   declaredMime: string

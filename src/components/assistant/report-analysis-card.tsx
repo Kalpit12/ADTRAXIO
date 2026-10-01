@@ -1,5 +1,7 @@
 "use client";
 
+import { EvidenceBlock } from "@/components/copilot/evidence-block";
+
 interface ReportAnalysisCardProps {
   reportName: string;
   period?: { from: string; to: string } | null;
@@ -15,11 +17,8 @@ export function ReportAnalysisCard({
   if (!reportName) return null;
 
   return (
-    <div className="my-3 max-w-full overflow-hidden rounded-lg border border-border/60 bg-adtraxio-surface/40 p-4">
-      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        Report analysis
-      </p>
-      <p className="mt-2 text-sm font-semibold text-foreground">{reportName}</p>
+    <EvidenceBlock source="report" title="Evidence · Report">
+      <p className="font-medium text-foreground">{reportName}</p>
       {period && (
         <p className="mt-1 text-xs text-muted-foreground">
           {period.from} – {period.to}
@@ -39,6 +38,6 @@ export function ReportAnalysisCard({
           ))}
         </div>
       )}
-    </div>
+    </EvidenceBlock>
   );
 }

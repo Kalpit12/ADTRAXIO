@@ -8,6 +8,7 @@ const heightClass = {
   sm: "h-6",
   md: "h-8",
   lg: "h-10",
+  xl: "h-14 sm:h-16",
 } as const;
 
 interface AdtraxioLogoProps {
@@ -27,8 +28,8 @@ export function AdtraxioLogo({
     <Image
       src={LOGO_SRC}
       alt={`${APP_NAME} — ${APP_TAGLINE}`}
-      width={480}
-      height={120}
+      width={1879}
+      height={302}
       priority={priority}
       className={cn(
         "w-auto max-w-full object-contain object-left",

@@ -70,7 +70,7 @@ export function GrowthBriefsView() {
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
-          Back to ADTRAXIO AI
+          Back to Growth Copilot
         </Link>
 
         <header className="flex flex-wrap items-end justify-between gap-3">

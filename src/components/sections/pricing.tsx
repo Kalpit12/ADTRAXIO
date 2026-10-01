@@ -3,16 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SectionImage } from "@/components/ui/section-image";
 import { Reveal } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
-import { homepageImages } from "@/lib/images";
 import type { PublicPlan } from "@/lib/billing/types";
 
 export function Pricing() {
   const [plans, setPlans] = useState<PublicPlan[]>([]);
-  const image = homepageImages.socialAppsPhone;
 
   useEffect(() => {
     fetch("/api/billing/plans")
@@ -34,25 +31,15 @@ export function Pricing() {
           </p>
         </Reveal>
 
-        <Reveal delay={0.1}>
-          <SectionImage
-            src={image.src}
-            alt={image.alt}
-            credit={image.credit}
-            overlay="full"
-            className="mx-auto mt-10 aspect-[21/6] max-w-3xl"
-          />
-        </Reveal>
-
-        <div className="mt-16 grid gap-6 lg:grid-cols-3">
+        <div className="mt-14 grid gap-6 lg:grid-cols-3">
           {plans.map((plan, i) => (
             <Reveal key={plan.id} delay={i * 0.1}>
               <div
                 className={cn(
                   "flex h-full flex-col rounded-lg border p-6 transition-colors",
                   plan.highlighted
-                    ? "border-adtraxio-accent/40 bg-adtraxio-accent-muted glow-accent-sm"
-                    : "border-border bg-adtraxio-surface/50"
+                    ? "border-adtraxio-accent/35 bg-adtraxio-accent-muted/60"
+                    : "border-border bg-adtraxio-surface/40"
                 )}
               >
                 <div>

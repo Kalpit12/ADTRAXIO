@@ -12,6 +12,7 @@ import {
   listLocalDrafts,
   saveLocalDraft,
 } from "./storage";
+import { parseStudioVisualState } from "./visual-types";
 import type {
   ContentDraft,
   ContentDraftSummary,
@@ -19,6 +20,7 @@ import type {
   CreativeBrief,
   GeneratedCreative,
 } from "./types";
+import type { StudioVisualState } from "./visual-types";
 
 type ContentRow = {
   id: string;
@@ -38,6 +40,7 @@ type ContentRow = {
   caption: string | null;
   hashtags: string[] | null;
   creative_direction: string | null;
+  studio_visual?: unknown;
   status: string;
   created_at: string;
   updated_at: string;
@@ -67,6 +70,7 @@ function mapRowToDraft(row: ContentRow): ContentDraft {
       hashtags: row.hashtags ?? [],
       creativeDirection: row.creative_direction ?? "",
     },
+    studioVisual: parseStudioVisualState(row.studio_visual ?? {}),
     status: row.status as ContentStatus,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -98,6 +102,7 @@ function mapDraftToInsert(
     caption: draft.creative.caption,
     hashtags: draft.creative.hashtags,
     creative_direction: draft.creative.creativeDirection,
+    studio_visual: draft.studioVisual ?? {},
     status: draft.status,
   };
 }
@@ -230,6 +235,7 @@ export async function saveDraft(input: {
   id?: string;
   brief: CreativeBrief;
   creative: GeneratedCreative;
+  studioVisual?: StudioVisualState;
   status?: ContentStatus;
 }): Promise<{ data?: ContentDraft; error?: string }> {
   const now = new Date().toISOString();
@@ -242,6 +248,7 @@ export async function saveDraft(input: {
       organizationId: "local",
       brief: input.brief,
       creative: input.creative,
+      studioVisual: input.studioVisual,
       status,
       createdAt: now,
       updatedAt: now,
@@ -257,6 +264,7 @@ export async function saveDraft(input: {
       organizationId: "local",
       brief: input.brief,
       creative: input.creative,
+      studioVisual: input.studioVisual,
       status,
       createdAt: now,
       updatedAt: now,
@@ -294,6 +302,7 @@ export async function saveDraft(input: {
     organizationId: orgId,
     brief: input.brief,
     creative: input.creative,
+    studioVisual: input.studioVisual,
     status,
     createdAt: now,
     updatedAt: now,

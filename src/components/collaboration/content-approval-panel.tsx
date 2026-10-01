@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ApprovalStatusBadge } from "@/components/collaboration/approval-status-badge";
-import { ActivityPanel } from "@/components/collaboration/activity-panel";
-import { CommentsPanel } from "@/components/collaboration/comments-panel";
-import { Button } from "@/components/ui/button";
+import { ApprovalWorkflowSection } from "@/components/collaboration/approval-workflow-section";
 import type { ContentApprovalRecord } from "@/lib/collaboration/types";
 
 interface ContentApprovalPanelProps {
@@ -16,7 +13,6 @@ export function ContentApprovalPanel({ contentId }: ContentApprovalPanelProps) {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
 
   const loadApproval = useCallback(async () => {
     if (!contentId || contentId.startsWith("local-")) return;
@@ -77,7 +73,8 @@ export function ContentApprovalPanel({ contentId }: ContentApprovalPanelProps) {
     return null;
   }
 
-  const canReview = approval?.status === "pending" || approval?.status === "changes_requested";
+  const canReview =
+    approval?.status === "pending" || approval?.status === "changes_requested";
   const canRequest =
     !approval ||
     approval.status === "cancelled" ||
@@ -85,108 +82,23 @@ export function ContentApprovalPanel({ contentId }: ContentApprovalPanelProps) {
     approval.status === "changes_requested";
 
   return (
-    <section className="mt-8 space-y-4 border-t border-border/60 pt-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground">Review</p>
-          <h2 className="text-lg font-medium text-foreground">Content approval</h2>
-        </div>
-        {approval && <ApprovalStatusBadge status={approval.status} />}
-      </div>
-
-      {loading && <p className="text-xs text-muted-foreground">Loading review status…</p>}
-
-      {approval && (
-        <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-          <div>
-            <dt>Requested</dt>
-            <dd className="text-foreground">
-              {new Date(approval.requestedAt).toLocaleString()}
-            </dd>
-          </div>
-          {approval.reviewedAt && (
-            <div>
-              <dt>Reviewed</dt>
-              <dd className="text-foreground">
-                {new Date(approval.reviewedAt).toLocaleString()}
-              </dd>
-            </div>
-          )}
-          {approval.rejectionReason && (
-            <div className="sm:col-span-2">
-              <dt>Note</dt>
-              <dd className="text-foreground">{approval.rejectionReason}</dd>
-            </div>
-          )}
-        </dl>
-      )}
-
-      {error && <p className="text-xs text-destructive">{error}</p>}
-
-      <div className="flex flex-wrap gap-2">
-        {canRequest && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={actionLoading}
-            onClick={() => void runAction("")}
-          >
-            Request review
-          </Button>
-        )}
-        {canReview && (
-          <>
-            <Button
-              size="sm"
-              disabled={actionLoading}
-              onClick={() => void runAction("approve")}
-            >
-              Approve
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={actionLoading}
-              onClick={() => void runAction("reject", { reason })}
-            >
-              Reject
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={actionLoading}
-              onClick={() => void runAction("changes", { reason })}
-            >
-              Request changes
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={actionLoading}
-              onClick={() => void runAction("cancel")}
-            >
-              Cancel
-            </Button>
-          </>
-        )}
-      </div>
-
-      {canReview && (
-        <input
-          className="flex h-9 w-full max-w-md rounded-md border border-border/70 bg-transparent px-3 text-sm outline-none focus:border-adtraxio-accent/50"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Optional note for reject / changes"
-        />
-      )}
-
-      <CommentsPanel contentId={contentId} approvalId={approval?.id} />
-      {approval && (
-        <div className="rounded-lg border border-border/70 p-4">
-          <p className="mb-3 text-sm font-medium text-foreground">Activity</p>
-          <ActivityPanel entityType="content_approval" entityId={approval.id} />
-        </div>
-      )}
-    </section>
+    <ApprovalWorkflowSection
+      title="Content review"
+      description="Publishing may be blocked until content is approved."
+      approval={approval}
+      loading={loading}
+      actionLoading={actionLoading}
+      error={error}
+      canReview={canReview}
+      canRequest={canRequest}
+      onRequest={() => void runAction("")}
+      onApprove={() => void runAction("approve")}
+      onReject={(reason) => void runAction("reject", { reason })}
+      onRequestChanges={(reason) => void runAction("changes", { reason })}
+      onCancel={() => void runAction("cancel")}
+      activityEntityType="content_approval"
+      activityEntityId={approval?.id}
+      contentId={contentId}
+    />
   );
 }

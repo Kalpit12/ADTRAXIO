@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 
 const STATUS_STYLES: Record<CampaignStatus, string> = {
-  draft: "bg-secondary text-muted-foreground",
-  active: "bg-adtraxio-accent/15 text-adtraxio-accent",
-  paused: "bg-amber-500/10 text-amber-300",
-  completed: "bg-blue-500/10 text-blue-300",
-  archived: "bg-secondary/80 text-muted-foreground/80",
+  draft: "border-border/70 text-muted-foreground",
+  active: "border-adtraxio-accent/30 text-foreground",
+  paused: "border-amber-500/25 text-foreground/90",
+  completed: "border-border/80 text-foreground",
+  archived: "border-border/50 text-muted-foreground/80",
 };
 
 interface CampaignStatusBadgeProps {
@@ -23,7 +23,7 @@ export function CampaignStatusBadge({ status, className }: CampaignStatusBadgePr
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex rounded border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em]",
         STATUS_STYLES[status],
         className
       )}

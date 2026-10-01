@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlatformIcon } from "@/components/dashboard/platform-icon";
+import { ConnectionError } from "@/components/social/connection-error";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { friendlyConnectionMessage } from "@/lib/social/connection-display";
 import { cn } from "@/lib/utils";
 
 interface PendingAccount {
@@ -28,7 +31,7 @@ export function SocialAccountSelectView() {
 
   useEffect(() => {
     if (!sessionId) {
-      setError("Connection session missing.");
+      setError("Connection session missing. Start again from Social connections.");
       setLoading(false);
       return;
     }
@@ -74,7 +77,11 @@ export function SocialAccountSelectView() {
 
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setError(payload.error ?? "Unable to connect selected accounts.");
+        setError(
+          friendlyConnectionMessage(
+            payload.error ?? "Unable to connect selected accounts."
+          )
+        );
         return;
       }
 
@@ -88,89 +95,118 @@ export function SocialAccountSelectView() {
 
   if (loading) {
     return (
-      <div className="h-40 animate-pulse rounded-md bg-secondary/30" />
+      <div className="mx-auto max-w-2xl space-y-8" aria-busy="true">
+        <div className="space-y-3 border-b border-border/60 pb-7">
+          <div className="h-3 w-32 animate-pulse rounded bg-secondary/30" />
+          <div className="h-9 w-3/4 animate-pulse rounded bg-secondary/30" />
+        </div>
+        <div className="rounded-md border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+          <p className="text-sm text-amber-100/90">Connection in progress</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Loading accounts from Meta…
+          </p>
+        </div>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-14 animate-pulse rounded-md bg-secondary/20" />
+        ))}
+      </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <header className="border-b border-border/60 pb-6">
-        <p className="text-xs font-medium text-muted-foreground">Social</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-          Select accounts to connect
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Choose which accounts ADTRAXIO should connect to your workspace.
+      <PageHeader
+        eyebrow="Social connections"
+        title="Choose accounts to connect"
+        description="Select the Pages or Instagram accounts ADTRAXIO should use in this workspace."
+      />
+
+      <div
+        className="rounded-md border border-adtraxio-accent/20 bg-adtraxio-accent/5 px-4 py-3"
+        role="status"
+      >
+        <p className="text-sm font-medium text-foreground">Connection in progress</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Finish here — you do not need to start Meta sign-in again unless this
+          page shows an error.
         </p>
-      </header>
+      </div>
 
       {error && (
-        <p
-          className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-300"
-          role="alert"
-        >
-          {error}
-        </p>
+        <ConnectionError message={error} onRetry={() => window.location.reload()} />
       )}
 
-      <ul className="divide-y divide-border/60">
-        {accounts.map((account) => {
-          const isSelected = selected.has(account.selectionId);
-          return (
-            <li key={account.selectionId}>
-              <button
-                type="button"
-                onClick={() => toggleSelection(account.selectionId)}
-                className="flex w-full items-center gap-3 py-4 text-left transition-colors hover:text-foreground"
-              >
-                <span
-                  className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded border",
-                    isSelected
-                      ? "border-adtraxio-accent bg-adtraxio-accent/15 text-foreground"
-                      : "border-border/70"
-                  )}
-                  aria-hidden
+      {accounts.length === 0 && !error ? (
+        <p className="text-sm text-muted-foreground">
+          No accounts were returned for this session.{" "}
+          <Link href="/social" className="font-medium text-foreground hover:underline">
+            Return to Social connections
+          </Link>
+        </p>
+      ) : (
+        <ul className="divide-y divide-border/60 rounded-md border border-border/60">
+          {accounts.map((account) => {
+            const isSelected = selected.has(account.selectionId);
+            const platformLabel =
+              account.platform === "facebook" ? "Facebook Page" : "Instagram";
+            return (
+              <li key={account.selectionId}>
+                <button
+                  type="button"
+                  onClick={() => toggleSelection(account.selectionId)}
+                  className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-white/[0.02]"
+                  aria-pressed={isSelected}
                 >
-                  {isSelected ? "✓" : ""}
-                </span>
-                {account.profileImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={account.profileImageUrl}
-                    alt=""
-                    className="size-10 rounded-md border border-border/60 object-cover"
-                  />
-                ) : (
-                  <PlatformIcon platform={account.platform} size="sm" />
-                )}
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {account.platform === "facebook" ? "Facebook" : "Instagram"}{" "}
-                    — {account.accountName}
-                  </p>
-                  {account.username && (
-                    <p className="text-xs text-muted-foreground">
-                      {account.username}
-                    </p>
+                  <span
+                    className={cn(
+                      "flex size-5 shrink-0 items-center justify-center rounded border",
+                      isSelected
+                        ? "border-adtraxio-accent bg-adtraxio-accent/15 text-foreground"
+                        : "border-border/70"
+                    )}
+                    aria-hidden
+                  >
+                    {isSelected ? "✓" : ""}
+                  </span>
+                  {account.profileImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={account.profileImageUrl}
+                      alt=""
+                      className="size-10 rounded-md border border-border/60 object-cover"
+                    />
+                  ) : (
+                    <PlatformIcon platform={account.platform} size="sm" />
                   )}
-                </div>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {account.username
+                        ? `@${account.username.replace(/^@/, "")}`
+                        : account.accountName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {platformLabel}
+                      {account.username && account.accountName
+                        ? ` · ${account.accountName}`
+                        : ""}
+                    </p>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       <div className="flex flex-wrap gap-3 border-t border-border/60 pt-6">
         <Button
           type="button"
-          className="bg-adtraxio-accent hover:bg-adtraxio-accent/90"
           disabled={submitting || selected.size === 0}
           onClick={handleConnect}
         >
           {submitting ? "Connecting…" : "Connect selected accounts"}
         </Button>
-        <Button asChild type="button" variant="ghost" size="sm">
+        <Button asChild type="button" variant="outline" size="sm">
           <Link href="/social">Cancel</Link>
         </Button>
       </div>

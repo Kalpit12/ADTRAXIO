@@ -1,91 +1,98 @@
 "use client";
 
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { HeroLiveBackground } from "@/components/marketing/hero-live-background";
 import { HeroDashboard } from "@/components/mockups/hero-dashboard";
-import { HeroBackground } from "@/components/hero/hero-background";
-import BlurText from "@/components/BlurText";
-import ShinyText from "@/components/ShinyText";
-import FadeContent from "@/components/FadeContent";
-
-const platforms = ["Instagram", "Facebook", "TikTok", "LinkedIn"];
-
-const primaryCtaClass =
-  "bg-adtraxio-accent text-primary-foreground hover:bg-adtraxio-accent/90";
+import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
+import { HeroPlatformLogos } from "@/components/marketing/hero-platform-logos";
+import { MARKETING_CTA } from "@/lib/design/marketing";
 
 export function Hero() {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <section className="relative overflow-x-clip pt-28 pb-20 sm:pt-32 sm:pb-28 lg:pt-36 lg:pb-32">
-      <HeroBackground />
+    <section className="relative overflow-x-clip pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24">
+      <HeroLiveBackground />
 
-      <div className="relative mx-auto max-w-6xl px-6 lg:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.25em]">
-              <ShinyText
-                text="SOCIAL GROWTH REIMAGINED"
-                speed={3.5}
-                color="oklch(0.62 0.12 128)"
-                shineColor="oklch(0.88 0.18 128)"
-                spread={100}
-                className="uppercase tracking-[0.25em]"
-              />
-            </p>
+      <div className="marketing-container relative z-[1]">
+        <div className="mx-auto max-w-4xl text-center">
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="text-[11px] font-medium uppercase tracking-[0.24em] text-white"
+          >
+            {APP_TAGLINE}
+          </motion.p>
 
-            <h1 className="font-heading mt-5 text-4xl leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem]">
-              <BlurText
-                text="Turn your social media into a growth engine."
-                animateBy="words"
-                delay={70}
-                stepDuration={0.3}
-                threshold={0.2}
-                className="font-heading text-4xl leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.25rem]"
-              />
-            </h1>
+          <motion.h1
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+            className="font-heading mt-6 text-[2.35rem] leading-[1.06] tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+          >
+            The growth operating system for social teams.
+          </motion.h1>
 
-            <FadeContent
-              blur={false}
-              duration={700}
-              delay={400}
-              threshold={0.05}
-              className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg"
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/95 sm:text-lg"
+          >
+            {APP_NAME} brings create, analyze, plan, act, and learn into one
+            workspace — content studio, campaigns, publishing, analytics, and
+            Growth Copilot included.
+          </motion.p>
+
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+          >
+            <Button
+              size="cta"
+              className="min-w-[10.5rem] bg-adtraxio-accent text-primary-foreground hover:bg-adtraxio-accent/90"
+              asChild
             >
-              Create better content, launch smarter campaigns, and understand
-              what&apos;s actually driving your growth — all from one AI-powered
-              platform.
-            </FadeContent>
+              <Link href={MARKETING_CTA.primaryHref}>
+                {MARKETING_CTA.primary}
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="cta"
+              className="min-w-[10.5rem] border-border/80"
+              asChild
+            >
+              <Link href={MARKETING_CTA.secondaryHref}>
+                {MARKETING_CTA.secondary}
+              </Link>
+            </Button>
+          </motion.div>
 
-            <FadeContent blur={false} duration={600} delay={550} threshold={0.05}>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Button size="cta" className={primaryCtaClass} asChild>
-                  <Link href="/signup">Start for free</Link>
-                </Button>
-                <Button variant="outline" size="cta" className="border-border" asChild>
-                  <Link href="#how-it-works">See how it works</Link>
-                </Button>
-              </div>
-            </FadeContent>
-
-            <FadeContent blur={false} duration={600} delay={650} threshold={0.05}>
-              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2">
-                {platforms.map((platform) => (
-                  <span
-                    key={platform}
-                    className="text-xs text-muted-foreground/70"
-                  >
-                    {platform}
-                  </span>
-                ))}
-              </div>
-            </FadeContent>
-          </div>
-
-          <FadeContent blur duration={900} delay={300} threshold={0.05}>
-            <div className="relative overflow-visible lg:pl-4">
-              <HeroDashboard />
-            </div>
-          </FadeContent>
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35, duration: 0.5 }}
+          >
+            <HeroPlatformLogos />
+          </motion.div>
         </div>
+
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mt-14 sm:mt-16 lg:mt-20"
+        >
+          <div className="overflow-hidden rounded-lg border border-border/90 bg-adtraxio-surface/40 p-1 sm:p-1.5">
+            <HeroDashboard />
+          </div>
+        </motion.div>
       </div>
     </section>
   );

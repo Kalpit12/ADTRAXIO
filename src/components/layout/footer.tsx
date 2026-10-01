@@ -4,14 +4,14 @@ import { APP_TAGLINE } from "@/lib/brand";
 
 const footerLinks = {
   Product: [
-    { label: "AI Studio", href: "#ai-studio" },
-    { label: "Campaigns", href: "#campaigns" },
-    { label: "Analytics", href: "#analytics" },
+    { label: "Platform", href: "#platform" },
+    { label: "Workspace", href: "#workspace" },
+    { label: "Growth Copilot", href: "#growth-copilot" },
     { label: "Pricing", href: "#pricing" },
   ],
   Resources: [
+    { label: "FAQ", href: "#faq" },
     { label: "Help", href: "#" },
-    { label: "Blog", href: "#" },
   ],
   Company: [
     { label: "About", href: "#" },

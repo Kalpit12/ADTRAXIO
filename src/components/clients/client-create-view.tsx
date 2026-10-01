@@ -1,12 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PageHeader } from "@/components/layout/page-header";
+import { WorkspaceSettingsSection } from "@/components/workspaces/workspace-settings-section";
+import { WorkspaceError } from "@/components/workspaces/workspace-error";
 import { Button } from "@/components/ui/button";
+import { ROLE_DESCRIPTIONS, ROLE_LABELS } from "@/lib/workspaces/display";
+import type { ClientRole } from "@/lib/workspaces/types";
 
 const fieldClass =
-  "flex h-9 w-full rounded-md border border-border/70 bg-transparent px-3 py-1 text-sm text-foreground outline-none focus:border-adtraxio-accent/50";
-const labelClass = "text-sm font-medium text-foreground";
+  "w-full rounded-md border border-border/70 bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-adtraxio-accent/40 focus:ring-2 focus:ring-adtraxio-accent/15";
 
 export function ClientCreateView() {
   const router = useRouter();
@@ -52,93 +57,100 @@ export function ClientCreateView() {
     }
   }
 
+  const ownerRole: ClientRole = "owner";
+
   return (
-    <div className="mx-auto max-w-lg space-y-10">
-      <header className="border-b border-border/60 pb-6">
-        <p className="text-xs font-medium text-muted-foreground">Agency</p>
-        <h1 className="font-heading mt-1 text-3xl tracking-tight text-foreground">
-          New client
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Create a dedicated workspace for a client&apos;s social operations.
-        </p>
-      </header>
+    <div className="mx-auto max-w-2xl space-y-8">
+      <PageHeader
+        eyebrow="Agency workspace"
+        title="Add client"
+        description="Create a focused workspace for a client's social growth operations."
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label htmlFor="name" className={labelClass}>
-            Client name
-          </label>
-          <input
-            id="name"
-            className={fieldClass}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Acme Corp"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="slug" className={labelClass}>
-            Slug
-          </label>
-          <input
-            id="slug"
-            className={fieldClass}
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="acme-corp"
-          />
-          <p className="text-xs text-muted-foreground">
-            Used in workspace URLs. Auto-generated from name if left blank.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="description" className={labelClass}>
-            Description
-          </label>
-          <textarea
-            id="description"
-            className={`${fieldClass} min-h-[80px] py-2`}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional client notes"
-            rows={3}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="ownerEmail" className={labelClass}>
-            Initial client owner email (optional)
-          </label>
-          <input
-            id="ownerEmail"
-            type="email"
-            className={fieldClass}
-            value={initialOwnerEmail}
-            onChange={(e) => setInitialOwnerEmail(e.target.value)}
-            placeholder="manager@client.com"
-          />
-        </div>
-
-        {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            {error}
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <WorkspaceSettingsSection title="Identity">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium text-foreground">
+                Client name
+              </label>
+              <input
+                id="name"
+                className={fieldClass}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Acme Corp"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="slug" className="text-sm font-medium text-foreground">
+                Workspace URL slug
+              </label>
+              <input
+                id="slug"
+                className={fieldClass}
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="acme-corp"
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional. Generated from the name if left blank.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="description"
+                className="text-sm font-medium text-foreground"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                className={`${fieldClass} min-h-[80px]`}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional context for your team"
+                rows={3}
+              />
+            </div>
           </div>
-        )}
+        </WorkspaceSettingsSection>
 
-        <div className="flex gap-3">
+        <WorkspaceSettingsSection
+          title="Access"
+          description="Invite a client-side owner after creation, or add an email now to send an invitation link."
+        >
+          <div className="space-y-2">
+            <label htmlFor="ownerEmail" className="text-sm font-medium text-foreground">
+              Initial owner email (optional)
+            </label>
+            <input
+              id="ownerEmail"
+              type="email"
+              className={fieldClass}
+              value={initialOwnerEmail}
+              onChange={(e) => setInitialOwnerEmail(e.target.value)}
+              placeholder="manager@client.com"
+            />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {ROLE_LABELS[ownerRole]} — {ROLE_DESCRIPTIONS[ownerRole]}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Invitations are shared via link in this environment — email delivery
+              is not automatic unless configured separately.
+            </p>
+          </div>
+        </WorkspaceSettingsSection>
+
+        {error && <WorkspaceError message={error} />}
+
+        <div className="flex flex-wrap gap-3 border-t border-border/60 pt-6">
           <Button type="submit" disabled={loading || !name.trim()}>
-            {loading ? "Creating…" : "Create client"}
+            {loading ? "Creating…" : "Create client workspace"}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => router.push("/clients")}
-          >
-            Cancel
+          <Button type="button" variant="outline" asChild>
+            <Link href="/clients">Cancel</Link>
           </Button>
         </div>
       </form>

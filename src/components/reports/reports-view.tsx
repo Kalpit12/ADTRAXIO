@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { FileText, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { ReportEmptyState } from "@/components/reports/report-empty-state";
+import { ReportError } from "@/components/reports/report-error";
+import { ReportListSkeleton } from "@/components/reports/report-skeleton";
+import { ReportRow } from "@/components/reports/report-row";
 import {
   formatReportDate,
   formatReportDateTime,
@@ -11,7 +15,7 @@ import {
   ReportStatusBadge,
   ReportVisibilityBadge,
 } from "@/components/reports/report-status-badge";
-import { AskAdtraxioLink } from "@/components/assistant/ask-adtraxio-link";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import type { ReportListItem } from "@/lib/reporting/types";
 
@@ -29,7 +33,6 @@ export function ReportsView() {
       const payload = (await response.json()) as {
         reports?: ReportListItem[];
         error?: string;
-        code?: string;
       };
 
       if (!response.ok) {
@@ -51,103 +54,88 @@ export function ReportsView() {
 
   return (
     <div className="space-y-10">
-      <header className="border-b border-border/60 pb-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">Reports</p>
-            <h1 className="font-heading mt-1 text-3xl tracking-tight text-foreground sm:text-4xl">
-              Client performance reports
-            </h1>
-            <AskAdtraxioLink
-              variant="button"
-              className="mt-4"
-              label="Explain a report with ADTRAXIO AI"
-              prompt="Help me understand my latest client report — summarize key metrics and recommended actions."
-            />
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Build and share performance snapshots from your connected analytics
-              for the selected client workspace.
-            </p>
-          </div>
-          <Button asChild size="sm">
-            <Link href="/reports/new">
-              <Plus className="size-3.5" />
-              New report
-            </Link>
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        title="Client reports"
+        description="Turn campaign and growth data into clear, client-ready reporting — a presentation layer, not your live analytics dashboard."
+      >
+        <Button asChild size="sm">
+          <Link href="/reports/new">
+            <Plus className="size-3.5" />
+            Create report
+          </Link>
+        </Button>
+      </PageHeader>
 
-      {error && (
-        <p className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      <p className="text-xs text-muted-foreground">
+        For operational metrics and exploration, use{" "}
+        <Link href="/analytics" className="font-medium text-foreground hover:underline">
+          Analytics
+        </Link>
+        . Reports capture a snapshot for sharing.
+      </p>
+
+      {error && <ReportError message={error} onRetry={() => void loadReports()} />}
 
       {loading ? (
-        <div className="space-y-3">
-          <div className="h-16 animate-pulse rounded-lg bg-secondary/30" />
-          <div className="h-16 animate-pulse rounded-lg bg-secondary/30" />
-        </div>
+        <ReportListSkeleton />
       ) : reports.length === 0 ? (
-        <div className="rounded-lg border border-border/60 px-6 py-12 text-center">
-          <FileText className="mx-auto size-8 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">
-            No reports yet for this client workspace.
-          </p>
-          <Button asChild size="sm" className="mt-4">
-            <Link href="/reports/new">Create your first report</Link>
-          </Button>
-        </div>
+        <ReportEmptyState />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border/60">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border/60 bg-secondary/20 text-xs text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Report</th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">Period</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="hidden px-4 py-3 font-medium sm:table-cell">Visibility</th>
-                <th className="hidden px-4 py-3 font-medium lg:table-cell">Last generated</th>
-                <th className="hidden px-4 py-3 font-medium lg:table-cell">Updated</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/40">
-              {reports.map((report) => (
-                <tr key={report.id} className="hover:bg-white/[0.02]">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/reports/${report.id}`}
-                      className="font-medium text-foreground hover:text-adtraxio-accent"
-                    >
-                      {report.name}
-                    </Link>
-                    {report.clientName && (
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {report.clientName}
-                      </p>
-                    )}
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
-                    {formatReportDate(report.dateFrom)} – {formatReportDate(report.dateTo)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <ReportStatusBadge status={report.status} />
-                  </td>
-                  <td className="hidden px-4 py-3 sm:table-cell">
-                    <ReportVisibilityBadge visibility={report.visibility} />
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">
-                    {formatReportDateTime(report.lastGeneratedAt)}
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">
-                    {formatReportDateTime(report.updatedAt)}
-                  </td>
+        <>
+          <div className="hidden overflow-hidden rounded-md border border-border/60 md:block">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border/60 bg-adtraxio-surface/10 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-5 py-3">Report</th>
+                  <th className="px-5 py-3">Period</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="hidden px-5 py-3 sm:table-cell">Audience</th>
+                  <th className="hidden px-5 py-3 lg:table-cell">Last snapshot</th>
+                  <th className="hidden px-5 py-3 lg:table-cell">Updated</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {reports.map((report) => (
+                  <tr key={report.id} className="border-b border-border/40 last:border-0 hover:bg-white/[0.02]">
+                    <td className="px-5 py-3">
+                      <Link
+                        href={`/reports/${report.id}`}
+                        className="font-medium text-foreground hover:text-adtraxio-accent"
+                      >
+                        {report.name}
+                      </Link>
+                      {report.clientName && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {report.clientName}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground">
+                      {formatReportDate(report.dateFrom)} – {formatReportDate(report.dateTo)}
+                    </td>
+                    <td className="px-5 py-3">
+                      <ReportStatusBadge status={report.status} />
+                    </td>
+                    <td className="hidden px-5 py-3 sm:table-cell">
+                      <ReportVisibilityBadge visibility={report.visibility} />
+                    </td>
+                    <td className="hidden px-5 py-3 text-muted-foreground lg:table-cell">
+                      {formatReportDateTime(report.lastGeneratedAt)}
+                    </td>
+                    <td className="hidden px-5 py-3 text-muted-foreground lg:table-cell">
+                      {formatReportDateTime(report.updatedAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="space-y-3 md:hidden">
+            {reports.map((report) => (
+              <ReportRow key={report.id} report={report} />
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

@@ -24,10 +24,11 @@ export function PlanCard({
   return (
     <div
       className={cn(
-        "flex h-full flex-col rounded-lg border p-5 transition-colors",
-        plan.highlighted
-          ? "border-adtraxio-accent/40 bg-adtraxio-accent/5"
-          : "border-border/60"
+        "flex h-full flex-col rounded-md border p-5 transition-colors motion-reduce:transition-none",
+        isCurrent
+          ? "border-adtraxio-accent/35 bg-adtraxio-accent/[0.04]"
+          : "border-border/60",
+        plan.highlighted && !isCurrent && "border-border/70"
       )}
     >
       <div>
@@ -60,13 +61,15 @@ export function PlanCard({
         disabled={loading || isCurrent || (isFree && currentPlanId !== "free")}
         onClick={() => onSelect(plan.id)}
       >
-        {isCurrent
-          ? "Current plan"
-          : isFree
-            ? "Included"
-            : plan.stripeConfigured
-              ? "Upgrade"
-              : "Coming soon"}
+        {loading
+          ? "Redirecting to checkout…"
+          : isCurrent
+            ? "Current plan"
+            : isFree
+              ? "Included"
+              : plan.stripeConfigured
+                ? "Upgrade"
+                : "Unavailable"}
       </Button>
     </div>
   );

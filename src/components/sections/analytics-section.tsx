@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 
 export function AnalyticsSection() {
   return (
-    <section id="analytics" className="py-24 sm:py-32">
+    <section id="analyze" className="py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-6 lg:px-8">
         <Reveal>
           <h2 className="font-heading text-3xl tracking-tight text-foreground sm:text-4xl">

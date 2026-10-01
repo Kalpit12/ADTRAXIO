@@ -5,13 +5,33 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ExecutionPlanRecord, ExecutionPlanStep } from "@/lib/execution/types";
+import { ExecutionStepTimeline } from "@/components/copilot/execution-step-timeline";
 import { LearningOutcomesPanel } from "./learning-outcomes-panel";
 import { StrategyEvaluationPanel } from "./strategy-evaluation-panel";
+
+function stepDetail(step: ExecutionPlanStep): string {
+  const draftCount = step.result?.contentIds?.length ?? 0;
+  const scheduleCount = step.result?.scheduleItems?.length ?? 0;
+  if (step.type === "create_content" || step.type === "repurpose_content") {
+    return `${draftCount} draft${draftCount === 1 ? "" : "s"} created`;
+  }
+  if (step.type === "create_campaign") {
+    return step.result?.campaignId
+      ? "Draft campaign prepared"
+      : "Campaign pending";
+  }
+  if (step.type === "prepare_schedule") {
+    return `${scheduleCount} post${scheduleCount === 1 ? "" : "s"} prepared`;
+  }
+  if (step.type === "analyze") return step.result?.message ?? "Complete";
+  return "";
+}
 
 function StepCard({
   step,
   onToggleApprove,
   onScheduleChange,
+  embedded = false,
 }: {
   step: ExecutionPlanStep;
   onToggleApprove: (stepId: string, approved: boolean) => void;
@@ -19,33 +39,34 @@ function StepCard({
     stepId: string,
     items: NonNullable<ExecutionPlanStep["result"]>["scheduleItems"]
   ) => void;
+  embedded?: boolean;
 }) {
   const draftCount = step.result?.contentIds?.length ?? 0;
   const scheduleCount = step.result?.scheduleItems?.length ?? 0;
-
-  let detail = "";
-  if (step.type === "create_content" || step.type === "repurpose_content") {
-    detail = `${draftCount} draft${draftCount === 1 ? "" : "s"} created`;
-  }
-  if (step.type === "create_campaign") {
-    detail = step.result?.campaignId
-      ? "Draft campaign prepared"
-      : "Campaign pending";
-  }
-  if (step.type === "prepare_schedule") {
-    detail = `${scheduleCount} post${scheduleCount === 1 ? "" : "s"} prepared`;
-  }
-  if (step.type === "analyze") detail = step.result?.message ?? "Complete";
+  const detail = stepDetail(step);
 
   return (
-    <div className="rounded-xl border border-border/60 bg-adtraxio-surface/25 p-4">
+    <div
+      className={
+        embedded
+          ? "pt-1"
+          : "rounded-md border border-border/60 bg-adtraxio-surface/15 p-4"
+      }
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-foreground">{step.title}</p>
-          <p className="mt-1 text-xs text-muted-foreground capitalize">
-            {step.type.replace(/_/g, " ")} · {step.status}
-          </p>
-          {detail && (
+          {!embedded && (
+            <>
+              <p className="text-sm font-medium text-foreground">{step.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground capitalize">
+                {step.type.replace(/_/g, " ")} · {step.status}
+              </p>
+            </>
+          )}
+          {detail && embedded && (
+            <p className="text-sm text-foreground/85">{detail}</p>
+          )}
+          {detail && !embedded && (
             <p className="mt-2 text-sm text-foreground/85">{detail}</p>
           )}
           {step.error && (
@@ -255,12 +276,12 @@ export function ExecutionPlanView({ planId }: { planId: string }) {
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
-          Back to ADTRAXIO AI
+          Back to Growth Copilot
         </Link>
 
         <header>
           <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            AI execution plan
+            Execution plan
           </p>
           <h1 className="mt-1 font-heading text-2xl tracking-tight">{plan.title}</h1>
           <p className="mt-2 text-xs text-muted-foreground capitalize">
@@ -297,16 +318,25 @@ export function ExecutionPlanView({ planId }: { planId: string }) {
 
         <section className="space-y-3">
           <h2 className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Execution plan
+            Steps
           </h2>
-          {plan.plan.steps.map((step) => (
-            <StepCard
-              key={step.id}
-              step={step}
-              onToggleApprove={patchStep}
-              onScheduleChange={patchSchedule}
-            />
-          ))}
+          <ExecutionStepTimeline
+            steps={plan.plan.steps.map((step, index) => ({
+              id: step.id,
+              index: index + 1,
+              title: step.title,
+              status: step.status,
+              detail: stepDetail(step) || undefined,
+              children: (
+                <StepCard
+                  step={step}
+                  embedded
+                  onToggleApprove={patchStep}
+                  onScheduleChange={patchSchedule}
+                />
+              ),
+            }))}
+          />
         </section>
 
         {(plan.plan.auditLog?.length ?? 0) > 0 && (

@@ -19,6 +19,8 @@ import { getAccountAccessToken } from "@/lib/social/service";
 import { getPlatformCapabilities } from "./capabilities";
 import { PublishingError, toClientError } from "./errors";
 import { metaPublishingProvider } from "./providers/meta";
+import { stageAiMediaAssetForPublishing } from "./stage-ai-asset";
+import { verifyPublishMediaAssetForContent } from "./verify-content-media";
 import type {
   CreatePublishRequest,
   PublishPayload,
@@ -346,13 +348,13 @@ export async function createScheduledPostRecord(
     input.request.caption
   );
 
-  const payload: PublishPayload = {
-    caption,
-    mediaType: input.request.mediaType ?? null,
-    mediaUrl: input.request.mediaUrl ?? null,
-  };
-
-  validatePayloadForPlatform(platform, payload);
+  if (input.request.mediaAssetId && !input.request.contentId) {
+    throw new PublishingError(
+      "invalid_content",
+      "Saved content is required to publish AI-generated media.",
+      400
+    );
+  }
 
   if (input.request.contentId) {
     try {
@@ -369,6 +371,33 @@ export async function createScheduledPostRecord(
     }
   }
 
+  let mediaType = input.request.mediaType ?? null;
+  let mediaUrl = input.request.mediaUrl ?? null;
+
+  if (input.request.mediaAssetId) {
+    await verifyPublishMediaAssetForContent(
+      supabase,
+      input.request.contentId as string,
+      input.organizationId,
+      input.request.mediaAssetId
+    );
+    const staged = await stageAiMediaAssetForPublishing(supabase, {
+      assetId: input.request.mediaAssetId,
+      organizationId: input.organizationId,
+      clientWorkspaceId: scope.isAgency ? scope.clientWorkspaceId : null,
+    });
+    mediaType = staged.mediaType;
+    mediaUrl = staged.mediaUrl;
+  }
+
+  const payload: PublishPayload = {
+    caption,
+    mediaType,
+    mediaUrl,
+  };
+
+  validatePayloadForPlatform(platform, payload);
+
   const { data, error } = await supabase
     .from("scheduled_posts")
     .insert({
@@ -381,8 +410,8 @@ export async function createScheduledPostRecord(
       scheduled_for: input.scheduledFor ?? null,
       status: input.status,
       caption,
-      media_type: input.request.mediaType ?? null,
-      media_url: input.request.mediaUrl ?? null,
+      media_type: mediaType,
+      media_url: mediaUrl,
       timezone: input.timezone ?? null,
     })
     .select("*")

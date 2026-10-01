@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { AssistantView } from "@/components/assistant/assistant-view";
 
 export const metadata = {
-  title: "ADTRAXIO AI — Assistant",
+  title: "Growth Copilot — ADTRAXIO",
 };
 
 export default function AssistantPage() {

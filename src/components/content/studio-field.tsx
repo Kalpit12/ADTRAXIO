@@ -127,6 +127,7 @@ interface StudioOptionGroupProps<T extends string> {
   options: StudioOption[];
   value: T;
   onChange: (value: T) => void;
+  compact?: boolean;
 }
 
 export function StudioOptionGroup<T extends string>({
@@ -134,13 +135,19 @@ export function StudioOptionGroup<T extends string>({
   options,
   value,
   onChange,
+  compact = false,
 }: StudioOptionGroupProps<T>) {
   return (
     <fieldset>
-      <legend className="mb-2.5 text-sm font-medium text-foreground/90">
+      <legend
+        className={cn(
+          "mb-2 font-medium text-foreground/90",
+          compact ? "text-xs text-muted-foreground" : "text-sm"
+        )}
+      >
         {label}
       </legend>
-      <div className="flex flex-wrap gap-2.5">
+      <div className="flex flex-wrap gap-1.5">
         {options.map((option) => {
           const selected = value === option.id;
           return (
@@ -150,10 +157,10 @@ export function StudioOptionGroup<T extends string>({
               aria-pressed={selected}
               onClick={() => onChange(option.id as T)}
               className={cn(
-                "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                "min-h-9 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-adtraxio-accent/30",
                 selected
-                  ? "border-adtraxio-accent/40 bg-adtraxio-accent/10 text-foreground"
-                  : "border-border/70 bg-secondary/20 text-muted-foreground hover:text-foreground"
+                  ? "border-adtraxio-accent/35 bg-white/[0.05] text-foreground ring-1 ring-adtraxio-accent/15"
+                  : "border-border/70 bg-transparent text-muted-foreground hover:bg-white/[0.02] hover:text-foreground"
               )}
             >
               {option.label}

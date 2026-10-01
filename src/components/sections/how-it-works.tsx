@@ -153,7 +153,7 @@ function MobileSteps() {
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="border-y border-border py-24 sm:py-32">
+    <section id="learn" className="border-y border-border/80 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-6 lg:px-8">
         <Reveal>
           <h2 className="font-heading text-center text-3xl tracking-tight text-foreground sm:text-4xl">

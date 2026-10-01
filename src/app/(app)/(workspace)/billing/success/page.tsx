@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BillingStatusBadge } from "@/components/billing/billing-status-badge";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import {
+  planDisplayName,
+  subscriptionStatusLabel,
+} from "@/lib/billing/display";
 import type { SubscriptionInfo } from "@/lib/billing/types";
 
 export default function BillingSuccessPage() {
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/billing/subscription")
@@ -16,27 +23,34 @@ export default function BillingSuccessPage() {
       })
       .catch(() => {
         setSubscription(null);
-      });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 py-10">
-      <header>
-        <h1 className="font-heading text-3xl tracking-tight text-foreground">
-          Checkout complete
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Your checkout was completed. Your subscription is being confirmed — this
-          may take a moment while Stripe processes the payment.
-        </p>
-      </header>
+    <div className="mx-auto max-w-lg space-y-8 py-4">
+      <PageHeader
+        eyebrow="Billing"
+        title="Checkout complete"
+        description="Your payment is being confirmed. This can take a moment — refresh billing to see your updated plan once it is active."
+      />
 
-      {subscription && (
-        <div className="rounded-lg border border-border/60 px-4 py-4 text-sm">
-          <p className="text-muted-foreground">Current status</p>
-          <p className="mt-1 font-medium capitalize text-foreground">
-            {subscription.effectivePlan} · {subscription.status}
+      {!loading && subscription && (
+        <div
+          className="rounded-md border border-border/60 px-4 py-4"
+          role="status"
+          aria-live="polite"
+        >
+          <p className="text-xs text-muted-foreground">Current entitlement</p>
+          <p className="mt-2 font-medium text-foreground">
+            {planDisplayName(subscription.effectivePlan)}
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <BillingStatusBadge subscription={subscription} />
+            <span className="text-sm text-muted-foreground">
+              {subscriptionStatusLabel(subscription.status)}
+            </span>
+          </div>
         </div>
       )}
 

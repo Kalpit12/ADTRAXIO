@@ -2,6 +2,7 @@
 
 import { MessageSquarePlus } from "lucide-react";
 import { ConversationItem } from "@/components/assistant/conversation-item";
+import { CopilotSidebarEmpty } from "@/components/copilot/copilot-empty-state";
 import { groupConversations } from "@/components/assistant/utils";
 import { Button } from "@/components/ui/button";
 import type { ConversationRecord } from "@/lib/assistant/types";
@@ -57,14 +58,7 @@ export function ConversationSidebar({
             ))}
           </div>
         ) : conversations.length === 0 ? (
-          <div className="px-3 py-6">
-            <p className="text-sm font-medium text-foreground/80">
-              No conversations yet
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Start a new conversation with ADTRAXIO AI.
-            </p>
-          </div>
+          <CopilotSidebarEmpty />
         ) : (
           <div className="space-y-4">
             {groups.map((group) => (

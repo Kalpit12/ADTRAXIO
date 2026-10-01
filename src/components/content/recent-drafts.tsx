@@ -23,8 +23,10 @@ export function RecentDrafts({
   if (loading) {
     return (
       <section className="border-t border-border/60 pt-8">
-        <h3 className="text-sm font-semibold text-foreground">Recent drafts</h3>
-        <div className="mt-4 h-16 animate-pulse rounded-md bg-secondary/30" />
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          Recent drafts
+        </h3>
+        <div className="mt-4 h-16 animate-pulse rounded-md bg-secondary/25" />
       </section>
     );
   }
@@ -35,16 +37,18 @@ export function RecentDrafts({
 
   return (
     <section className="border-t border-border/60 pt-8">
-      <h3 className="text-sm font-semibold text-foreground">Recent drafts</h3>
-      <ul className="mt-4 divide-y divide-border/60">
+      <h3 className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        Recent drafts
+      </h3>
+      <ul className="mt-4 divide-y divide-border/50">
         {drafts.map((draft) => (
           <li key={draft.id}>
             <button
               type="button"
               onClick={() => onSelect(draft.id)}
               className={cn(
-                "flex w-full items-start justify-between gap-4 py-3 text-left transition-colors hover:text-foreground",
-                activeDraftId === draft.id && "text-foreground"
+                "flex w-full items-start justify-between gap-4 py-3 text-left transition-colors hover:bg-white/[0.02]",
+                activeDraftId === draft.id && "bg-white/[0.03]"
               )}
             >
               <div className="min-w-0">

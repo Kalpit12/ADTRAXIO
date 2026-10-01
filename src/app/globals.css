@@ -170,6 +170,12 @@
       transparent
     );
   }
+  .marketing-container {
+    @apply mx-auto max-w-6xl px-6 lg:px-8;
+  }
+  .app-page-container {
+    @apply w-full;
+  }
 }
 
 @media print {

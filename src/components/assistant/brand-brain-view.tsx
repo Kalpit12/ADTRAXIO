@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { BrandProductDeleteDialog } from "@/components/assistant/brand-product-delete-dialog";
 import { Button } from "@/components/ui/button";
+import { friendlyCollaborationError } from "@/lib/collaboration/display";
 import type {
   BrandMemoryRecord,
   BrandProductRecord,
@@ -71,6 +73,10 @@ export function BrandBrainView() {
   const [productDraft, setProductDraft] = useState<BrandProductRecord | null>(
     null
   );
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -232,8 +238,9 @@ export function BrandBrainView() {
     }
   }
 
-  async function deleteProduct(id: string) {
-    if (!window.confirm("Delete this product from Brand Brain?")) return;
+  async function confirmDeleteProduct() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     setSaving(true);
     setError(null);
     try {
@@ -242,7 +249,11 @@ export function BrandBrainView() {
       });
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "Unable to delete product.");
+        setError(
+          friendlyCollaborationError(
+            payload.error ?? "Unable to delete product."
+          )
+        );
         return;
       }
       setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -251,6 +262,7 @@ export function BrandBrainView() {
         setProductDraft(null);
       }
       setMessage("Product removed.");
+      setDeleteTarget(null);
     } catch {
       setError("Unable to delete product.");
     } finally {
@@ -280,14 +292,20 @@ export function BrandBrainView() {
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="size-3.5" />
-            Back to ADTRAXIO AI
+            Back to Growth Copilot
           </Link>
         </div>
 
-        <header>
-          <h1 className="font-heading text-2xl tracking-tight">Brand Brain</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Approved business context ADTRAXIO AI uses for content and strategy.
+        <header className="border-b border-border/50 pb-6">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            Brand intelligence
+          </p>
+          <h1 className="mt-1 font-heading text-2xl tracking-tight sm:text-3xl">
+            Brand Brain
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            Confirmed identity, voice, audience, and products Copilot uses for
+            content and strategy. Inferred items stay separate until approved.
           </p>
         </header>
 
@@ -301,9 +319,9 @@ export function BrandBrainView() {
         )}
 
         {profile && (
-          <section className="space-y-4 rounded-xl border border-border/60 bg-adtraxio-surface/25 p-5">
-            <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Brand
+          <section className="space-y-4 rounded-md border border-border/60 bg-adtraxio-surface/15 p-5">
+            <h2 className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Brand identity
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
@@ -511,7 +529,9 @@ export function BrandBrainView() {
                             type="button"
                             size="sm"
                             variant="ghost"
-                            onClick={() => void deleteProduct(p.id)}
+                            onClick={() =>
+                              setDeleteTarget({ id: p.id, name: p.name })
+                            }
                           >
                             Delete
                           </Button>
@@ -585,6 +605,14 @@ export function BrandBrainView() {
           </ul>
         </section>
       </div>
+
+      <BrandProductDeleteDialog
+        open={deleteTarget != null}
+        productName={deleteTarget?.name ?? "this product"}
+        loading={saving}
+        onConfirm={() => void confirmDeleteProduct()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -1,14 +1,10 @@
-import { cn } from "@/lib/utils";
+import { CLIENT_STATUS_LABELS } from "@/lib/workspaces/display";
 import type { ClientStatus } from "@/lib/workspaces/types";
-
-const STATUS_LABELS: Record<ClientStatus, string> = {
-  active: "Active",
-  archived: "Archived",
-};
+import { cn } from "@/lib/utils";
 
 const STATUS_STYLES: Record<ClientStatus, string> = {
-  active: "bg-adtraxio-accent/15 text-adtraxio-accent",
-  archived: "bg-secondary/80 text-muted-foreground/80",
+  active: "border-adtraxio-accent/30 text-foreground",
+  archived: "border-border/70 text-muted-foreground",
 };
 
 interface ClientStatusBadgeProps {
@@ -20,12 +16,12 @@ export function ClientStatusBadge({ status, className }: ClientStatusBadgeProps)
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex rounded border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em]",
         STATUS_STYLES[status],
         className
       )}
     >
-      {STATUS_LABELS[status]}
+      {CLIENT_STATUS_LABELS[status]}
     </span>
   );
 }

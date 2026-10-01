@@ -11,82 +11,46 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  AI_NAV,
-  FOOTER_NAV,
-  MAIN_NAV,
-  SECONDARY_NAV,
-  type NavItem,
-} from "@/lib/navigation/app-nav";
 import { AdtraxioLogo } from "@/components/brand/adtraxio-logo";
+import { AppCommandEntry } from "@/components/layout/app-command-entry";
+import { ShellNavSection } from "@/components/layout/sidebar-nav";
+import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
+import { useShellNavigation } from "@/lib/navigation/use-shell-navigation";
+import { isNavItemActive } from "@/lib/navigation/is-nav-active";
+import { MAIN_NAV, SECONDARY_NAV } from "@/lib/navigation/app-nav";
 import { cn } from "@/lib/utils";
 
-const MOBILE_PRIMARY: NavItem[] = [
+const MOBILE_PRIMARY = [
   MAIN_NAV[0],
   MAIN_NAV[1],
-  MAIN_NAV[3],
-  MAIN_NAV[4],
+  { ...MAIN_NAV[4], label: "Analytics" },
   SECONDARY_NAV[0],
 ];
-
-function MobileNavLink({
-  item,
-  active,
-  onNavigate,
-}: {
-  item: NavItem;
-  active: boolean;
-  onNavigate: () => void;
-}) {
-  const Icon = item.icon;
-
-  return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-        active
-          ? "bg-secondary font-medium text-foreground"
-          : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
-      )}
-    >
-      <Icon
-        className={cn(
-          "size-[18px] shrink-0",
-          active ? "text-foreground" : "text-muted-foreground"
-        )}
-      />
-      {item.label}
-    </Link>
-  );
-}
 
 export function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-
-  function isActive(href: string) {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }
+  const { sections } = useShellNavigation();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-sidebar/95 backdrop-blur-xl lg:hidden">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-sidebar/95 backdrop-blur-md lg:hidden"
+      aria-label="Mobile navigation"
+    >
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1">
         {MOBILE_PRIMARY.map((item) => {
           const Icon = item.icon;
-          const active = isActive(item.href);
+          const active = isNavItemActive(pathname, item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex min-w-0 flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] font-medium transition-colors",
+                "flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-medium transition-colors",
                 active ? "text-foreground" : "text-muted-foreground"
               )}
             >
-              <Icon className="size-5" />
+              <Icon className="size-5" strokeWidth={1.5} />
               <span className="truncate">{item.label}</span>
             </Link>
           );
@@ -96,7 +60,7 @@ export function MobileNav() {
           <SheetTrigger asChild>
             <button
               type="button"
-              className="flex min-w-0 flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] font-medium text-muted-foreground"
+              className="flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-medium text-muted-foreground"
             >
               <Menu className="size-5" />
               <span>More</span>
@@ -104,57 +68,24 @@ export function MobileNav() {
           </SheetTrigger>
           <SheetContent
             side="left"
-            className="w-[280px] border-border bg-sidebar"
+            className="w-[min(100vw-2rem,300px)] border-border bg-sidebar p-0"
           >
-            <SheetHeader>
+            <SheetHeader className="border-b border-border/60 px-4 py-4 text-left">
               <SheetTitle className="text-left">
-                <AdtraxioLogo href="/dashboard" size="xs" />
+                <AdtraxioLogo href="/dashboard" size="sm" />
               </SheetTitle>
+              <WorkspaceSwitcher className="mt-3 w-full" />
+              <AppCommandEntry className="mt-3 w-full" />
             </SheetHeader>
-            <div className="mt-6 space-y-6 overflow-y-auto pb-8">
-              <div className="space-y-1">
-                {MAIN_NAV.map((item) => (
-                  <MobileNavLink
-                    key={item.href}
-                    item={item}
-                    active={isActive(item.href)}
-                    onNavigate={() => setOpen(false)}
-                  />
-                ))}
-              </div>
-              <div className="h-px bg-border/80" />
-              <div className="space-y-1">
-                {SECONDARY_NAV.map((item) => (
-                  <MobileNavLink
-                    key={item.href}
-                    item={item}
-                    active={isActive(item.href)}
-                    onNavigate={() => setOpen(false)}
-                  />
-                ))}
-              </div>
-              <div className="h-px bg-border/80" />
-              <div className="space-y-1">
-                {AI_NAV.map((item) => (
-                  <MobileNavLink
-                    key={item.href}
-                    item={item}
-                    active={isActive(item.href)}
-                    onNavigate={() => setOpen(false)}
-                  />
-                ))}
-              </div>
-              <div className="h-px bg-border/80" />
-              <div className="space-y-1">
-                {FOOTER_NAV.map((item) => (
-                  <MobileNavLink
-                    key={item.href}
-                    item={item}
-                    active={isActive(item.href)}
-                    onNavigate={() => setOpen(false)}
-                  />
-                ))}
-              </div>
+            <div className="space-y-5 overflow-y-auto px-2 py-4 pb-10">
+              {sections.map((section) => (
+                <ShellNavSection
+                  key={section.id}
+                  label={section.label}
+                  items={section.items}
+                  onNavigate={() => setOpen(false)}
+                />
+              ))}
             </div>
           </SheetContent>
         </Sheet>

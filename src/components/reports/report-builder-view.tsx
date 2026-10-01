@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Archive, Loader2, Printer, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Archive, FileBarChart, Loader2, Printer, Save } from "lucide-react";
+import { ReportArchiveDialog } from "@/components/reports/report-archive-dialog";
+import { ReportError } from "@/components/reports/report-error";
+import { ReportListSkeleton } from "@/components/reports/report-skeleton";
 import { ReportDisplay } from "@/components/reports/report-display";
 import {
   formatReportDateTime,
@@ -65,6 +68,7 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
   const [generating, setGenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -253,9 +257,6 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
   async function archiveReport() {
     if (archiving) return;
     if (!reportId) return;
-    if (!window.confirm("Archive this report? It will no longer appear in client lists.")) {
-      return;
-    }
     setArchiving(true);
     setError(null);
 
@@ -271,6 +272,7 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
       }
 
       if (data.report) setReport(data.report);
+      setShowArchive(false);
       setMessage("Report archived.");
     } catch {
       setError("Unable to archive report.");
@@ -295,8 +297,9 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      <div className="space-y-8">
+        <div className="h-24 animate-pulse rounded-md bg-secondary/20" />
+        <ReportListSkeleton />
       </div>
     );
   }
@@ -345,8 +348,8 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
             )}
             {!isNew && report?.status !== "archived" && (
               <Button size="sm" variant="secondary" onClick={() => void generateSnapshot()} disabled={generating}>
-                {generating ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
-                Generate
+                {generating ? <Loader2 className="size-3.5 animate-spin" /> : <FileBarChart className="size-3.5" />}
+                Generate snapshot
               </Button>
             )}
             {!isNew && report?.status === "draft" && (
@@ -356,7 +359,7 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
               </Button>
             )}
             {!isNew && report?.status !== "archived" && (
-              <Button size="sm" variant="outline" onClick={() => void archiveReport()} disabled={archiving}>
+              <Button size="sm" variant="outline" onClick={() => setShowArchive(true)} disabled={archiving}>
                 <Archive className="size-3.5" />
                 Archive
               </Button>
@@ -372,9 +375,9 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
       </header>
 
       {error && (
-        <p className="no-print rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
+        <div className="no-print">
+          <ReportError message={error} />
+        </div>
       )}
       {message && (
         <p className="no-print rounded-md border border-adtraxio-accent/20 bg-adtraxio-accent/5 px-3 py-2 text-sm text-adtraxio-accent">
@@ -383,8 +386,16 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
       )}
 
       {showBuilder && (
-        <section className="no-print space-y-6 rounded-lg border border-border/60 p-5">
-          <h2 className="font-heading text-lg tracking-tight">Report settings</h2>
+        <section className="no-print space-y-6 rounded-md border border-border/60 p-5">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              Report details
+            </p>
+            <h2 className="font-heading text-lg tracking-tight">Configure snapshot</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Choose the period and sections included when you generate a snapshot.
+            </p>
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <label htmlFor="report-name" className="text-sm font-medium text-foreground">
@@ -476,7 +487,7 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
               ["Campaigns", includeCampaigns, setIncludeCampaigns],
               ["Content", includeContent, setIncludeContent],
               ["Platform breakdown", includePlatforms, setIncludePlatforms],
-              ["AI summary", includeAiSummary, setIncludeAiSummary],
+              ["Executive summary", includeAiSummary, setIncludeAiSummary],
             ].map(([label, value, setter]) => (
               <label
                 key={label as string}
@@ -497,7 +508,7 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
 
       {!isNew && snapshots.length > 0 && (
         <section className="no-print space-y-3">
-          <h2 className="font-heading text-lg tracking-tight">Report history</h2>
+          <h2 className="font-heading text-lg tracking-tight">Snapshot history</h2>
           <div className="flex flex-wrap gap-2">
             {snapshots.map((snapshot) => (
               <button
@@ -524,12 +535,19 @@ export function ReportBuilderView({ reportId }: ReportBuilderViewProps) {
         !isNew && (
           <div className="rounded-lg border border-dashed border-border/60 px-6 py-12 text-center">
             <p className="text-sm text-muted-foreground">
-              No generated snapshot yet. Save your draft and click Generate to build
-              the report from live analytics.
+              No snapshot yet. Save your draft, then generate a snapshot from analytics
+              for the selected period.
             </p>
           </div>
         )
       )}
+      <ReportArchiveDialog
+        open={showArchive}
+        reportName={report?.name ?? "this report"}
+        loading={archiving}
+        onConfirm={() => void archiveReport()}
+        onCancel={() => setShowArchive(false)}
+      />
     </div>
   );
 }
